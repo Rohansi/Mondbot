@@ -1,0 +1,8 @@
+﻿{
+    "Token": "<your bot token>",
+    "DbAddress": "127.0.0.1",
+    "DbPort": 5432,
+    "DbName": "mondbotdb",
+    "DbUsername": "mondbot",
+    "DbPassword": "<your db password>"     
+}
