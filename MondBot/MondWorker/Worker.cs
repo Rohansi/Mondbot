@@ -55,7 +55,7 @@ namespace MondBot
             catch { }
         }
 
-        public async Task<string> Run(string source)
+        public async Task<string> Run(string username, string source)
         {
             Console.WriteLine("Run on {0}", Process.Id);
 
@@ -63,7 +63,8 @@ namespace MondBot
             var sendStream = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true };
             var receiveStream = new StreamReader(stream, new UTF8Encoding(false));
 
-            // send source
+            // send username and source
+            await sendStream.WriteLineAsync(Encode(username));
             await sendStream.WriteLineAsync(Encode(source));
 
             var timeout = _isNew ? 17 : 15;

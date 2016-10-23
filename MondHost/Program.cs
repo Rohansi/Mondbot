@@ -39,11 +39,15 @@ namespace MondHost
             {
                 GC.Collect();
 
+                var username = await receiveStream.ReadLineAsync();
+                if (username == null)
+                    return;
+
                 var source = await receiveStream.ReadLineAsync();
                 if (source == null)
                     return;
 
-                var result = worker.Run(source);
+                var result = worker.Run(username, source);
 
                 await sendStream.WriteLineAsync(result);
             }

@@ -126,6 +126,10 @@ namespace MondBot
                     await AddMondMethod(message, remainingText);
                     break;
 
+                case "view":
+                    await ViewMondVariable(message, remainingText);
+                    break;
+
                 default:
                     return false;
             }
@@ -161,7 +165,7 @@ namespace MondBot
             if (string.IsNullOrWhiteSpace(code))
                 return;
 
-            var result = await RunModule.Run(code + ";");
+            var result = await RunModule.Run(message.GetUsername(), code + ";");
             if (string.IsNullOrWhiteSpace(result))
                 return;
 
@@ -183,7 +187,7 @@ namespace MondBot
             var name = match.Groups[1].Value;
             var code = match.Groups[2].Value;
 
-            var result = await RunModule.Run($"print({code});");
+            var result = await RunModule.Run(message.GetUsername(), $"print({code});");
 
             if (result.StartsWith("ERROR:") || result.StartsWith("EXCEPTION:") || result.StartsWith("mondbox"))
             {
@@ -198,14 +202,12 @@ namespace MondBot
                 return;
             }
 
-            var cmd = new SqlCommand(@"INSERT INTO mondbot.methods (chat_id, sender_id, date, name, code) VALUES (:chatId, :senderId, :date, :name, :code)
-                                      ON CONFLICT (name) DO UPDATE SET chat_id = :chatId, sender_id = :senderId, date = :date, code = :code;")
+            var cmd = new SqlCommand(@"INSERT INTO mondbot.variables (name, type, data) VALUES (:name, :type, :data)
+                                       ON CONFLICT (name) DO UPDATE SET type = :type, data = :data;")
             {
-                ["chatId"] = message.Chat.Id,
-                ["senderId"] = message.From.Id,
-                ["date"] = message.Date,
                 ["name"] = name,
-                ["code"] = code
+                ["type"] = (int)VariableType.Method,
+                ["data"] = code
             };
 
             using (cmd)
@@ -214,6 +216,29 @@ namespace MondBot
             }
 
             await Bot.SendTextMessageAsync(message.Chat.Id, "Successfully updated method!", replyToMessageId: message.MessageId);
+        }
+
+        private static async Task ViewMondVariable(Message message, string name)
+        {
+            var cmd = new SqlCommand(@"SELECT * FROM mondbot.variables WHERE name = :name;")
+            {
+                ["name"] = name.Trim()
+            };
+
+            using (cmd)
+            {
+                var result = (await cmd.Execute()).SingleOrDefault();
+
+                if (result == null)
+                {
+                    await Bot.SendTextMessageAsync(message.Chat.Id, "Variable doesn't exist!", replyToMessageId: message.MessageId);
+                    return;
+                }
+
+                string data = result.data;
+                var dataEncoded = "<pre>" + WebUtility.HtmlEncode(data) + "</pre>";
+                await Bot.SendTextMessageAsync(message.Chat.Id, dataEncoded, replyToMessageId: message.MessageId, parseMode: ParseMode.Html);
+            }
         }
 
         private static readonly Regex CommandRegex = new Regex(@"[/]+([a-z]+)");

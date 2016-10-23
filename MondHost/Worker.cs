@@ -6,6 +6,7 @@ using System.Text;
 using Mond;
 using Mond.Libraries;
 using MondBot;
+using Npgsql;
 
 namespace MondHost
 {
@@ -15,14 +16,19 @@ namespace MondHost
         const int MaxOutputLines = 20;
 
         private readonly StringBuilder _outputBuffer;
-        private Dictionary<string, MondValue> _methodCache;
+        
+        private NpgsqlConnection _connection; 
+        private NpgsqlTransaction _transaction;
+
+        private MondState _state;
+        private Dictionary<string, MondValue> _variableCache;
 
         public Worker()
         {
             _outputBuffer = new StringBuilder(MaxOutputChars);
         }
 
-        public string Run(string source)
+        public string Run(string username, string source)
         {
             _outputBuffer.Clear();
 
@@ -30,61 +36,72 @@ namespace MondHost
 
             try
             {
-                var state = new MondState
+                using (_connection = Database.CreateConnection())
                 {
-                    Options = new MondCompilerOptions
+                    _transaction = _connection.BeginTransaction();
+
+                    _state = new MondState
                     {
-                        DebugInfo = MondDebugInfoLevel.StackTrace,
-                        UseImplicitGlobals = true,
-                    },
-                    Libraries = new MondLibraryManager
-                    {
-                        new ModifiedCoreLibraries(),
-                        new ConsoleOutputLibraries(),
-                        new JsonLibraries(),
-                        new HttpLibraries(),
-                    }
-                };
-
-                state.Libraries.Configure(libs =>
-                {
-                    var consoleOut = libs.Get<ConsoleOutputLibrary>();
-                    consoleOut.Out = output;
-                });
-
-                _methodCache = new Dictionary<string, MondValue>();
-
-                var methodGetter = new MondValue(MethodGetter);
-                var methodSetter = new MondValue(MethodSetter);
-
-                state["__ops"]["__get"] = methodGetter;
-                state["__ops"]["__set"] = methodSetter;
-                state["__get"] = methodGetter;
-                state["__set"] = methodSetter;
-
-                var program = Decode(source);
-
-                GC.Collect();
-
-                var result = state.Run(program, "mondbox");
-
-                if (result != MondValue.Undefined)
-                {
-                    output.WriteLine();
-                    output.WriteLine("=================");
-
-                    if (result["moveNext"])
-                    {
-                        output.WriteLine("sequence (100 max):");
-                        foreach (var i in result.Enumerate(state).Take(100))
+                        Options = new MondCompilerOptions
                         {
-                            output.WriteLine(i.Serialize());
+                            DebugInfo = MondDebugInfoLevel.StackTrace,
+                            UseImplicitGlobals = true,
+                        },
+                        Libraries = new MondLibraryManager
+                        {
+                            new ModifiedCoreLibraries(),
+                            new ConsoleOutputLibraries(),
+                            new ModifiedJsonLibraries(),
+                            new HttpLibraries(),
+                        }
+                    };
+
+                    _state.Libraries.Configure(libs =>
+                    {
+                        var consoleOut = libs.Get<ConsoleOutputLibrary>();
+                        consoleOut.Out = output;
+                    });
+
+                    _state.EnsureLibrariesLoaded();
+
+                    _state["username"] = username;
+
+                    _variableCache = new Dictionary<string, MondValue>();
+
+                    var variableGetter = new MondValue(VariableGetter);
+                    var variableSetter = new MondValue(VariableSetter);
+
+                    _state["__ops"]["__get"] = variableGetter;
+                    _state["__ops"]["__set"] = variableSetter;
+                    _state["__get"] = variableGetter;
+                    _state["__set"] = variableSetter;
+
+                    var program = Decode(source);
+
+                    GC.Collect();
+
+                    var result = _state.Run(program, "mondbox");
+
+                    if (result != MondValue.Undefined)
+                    {
+                        output.WriteLine();
+                        output.WriteLine("=================");
+
+                        if (result["moveNext"])
+                        {
+                            output.WriteLine("sequence (100 max):");
+                            foreach (var i in result.Enumerate(_state).Take(100))
+                            {
+                                output.WriteLine(i.Serialize());
+                            }
+                        }
+                        else
+                        {
+                            output.WriteLine(result.Serialize());
                         }
                     }
-                    else
-                    {
-                        output.WriteLine(result.Serialize());
-                    }
+
+                    _transaction.Commit();
                 }
             }
             catch (OutOfMemoryException)
@@ -114,42 +131,44 @@ namespace MondHost
             return Encode(_outputBuffer.ToString());
         }
 
-        private MondValue MethodGetter(MondState state, params MondValue[] args)
+        private MondValue VariableGetter(MondState state, params MondValue[] args)
         {
             if (args.Length != 2)
-                throw new MondRuntimeException("MethodsObject.__get: requires 2 parameters");
+                throw new MondRuntimeException("VariableObject.__get: requires 2 parameters");
 
             var name = (string)args[1];
 
-            MondValue method;
-            if (_methodCache.TryGetValue(name, out method))
-                return method;
+            MondValue value;
+            if (_variableCache.TryGetValue(name, out value))
+                return value;
 
-            var code = LoadMethod(name);
-            if (code == null)
-                throw new MondRuntimeException($"Undefined method '{name}'");
+            value = LoadVariable(name);
+            if (value == null)
+                throw new MondRuntimeException($"Undefined variable '{name}'");
 
-            method = state.Run(LoadMethod(name), name + ".mnd");
-            _methodCache.Add(name, method);
-
-            return method;
+            _variableCache.Add(name, value);
+            return value;
         }
 
-        private MondValue MethodSetter(MondState state, params MondValue[] args)
+        private MondValue VariableSetter(MondState state, params MondValue[] args)
         {
             if (args.Length != 3)
-                throw new MondRuntimeException("MethodsObject.__set: requires 3 parameters");
+                throw new MondRuntimeException("VariableObject.__set: requires 3 parameters");
 
             var name = (string)args[1];
-            var method = args[2];
+            var value = args[2];
 
-            _methodCache[name] = method;
-            return method;
+            StoreVariable(name, value);
+            _variableCache[name] = value;
+            return value;
         }
 
-        private static string LoadMethod(string name)
+        private MondValue LoadVariable(string name)
         {
-            var cmd = new SqlCommand(@"SELECT * FROM mondbot.methods WHERE name = :name;")
+            VariableType type;
+            string data;
+
+            var cmd = new SqlCommand(_connection, _transaction, @"SELECT type, data FROM mondbot.variables WHERE name = :name FOR UPDATE;")
             {
                 ["name"] = name
             };
@@ -160,7 +179,39 @@ namespace MondHost
                 if (result == null)
                     return null;
 
-                return "return " + result.code + ";";
+                type = (VariableType)(short)result.type;
+                data = (string)result.data;
+            }
+
+            switch (type)
+            {
+                case VariableType.Serialized:
+                    return _state.Call(_state["Json"]["deserialize"], data);
+                
+                case VariableType.Method:
+                    var code = "return " + data + ";";
+                    return _state.Run(code, name + ".mnd");
+
+                default:
+                    throw new MondRuntimeException($"Unhandled VariableType {type}");
+            }
+        }
+
+        private void StoreVariable(string name, MondValue value)
+        {
+            var data = (string)_state.Call(_state["Json"]["serialize"], value);
+
+            var cmd = new SqlCommand(_connection, _transaction, @"INSERT INTO mondbot.variables (name, type, data) VALUES (:name, :type, :data)
+                                                                  ON CONFLICT (name) DO UPDATE SET type = :type, data = :data;")
+            {
+                ["name"] = name,
+                ["type"] = (int)VariableType.Serialized,
+                ["data"] = data
+            };
+
+            using (cmd)
+            {
+                cmd.ExecuteNonQuery().Wait();
             }
         }
 

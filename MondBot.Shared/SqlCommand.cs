@@ -19,10 +19,10 @@ namespace MondBot
 
         }
 
-        public SqlCommand(NpgsqlTransaction transaction, string sql)
-            : this(transaction.Connection, false, sql)
+        public SqlCommand(NpgsqlConnection connection, NpgsqlTransaction transaction, string sql)
+            : this(connection, false, sql)
         {
-            
+            _command.Transaction = transaction;
         }
 
         private SqlCommand(NpgsqlConnection connection, bool ownsConnection, string sql)
@@ -56,21 +56,23 @@ namespace MondBot
         public async Task<IEnumerable<dynamic>> Execute()
         {
             var reader = await _command.ExecuteReaderAsync();
-            return new ResultIterator(_command.Connection, reader);
+            return new ResultIterator(_connection, _ownsConnection, reader);
         }
 
         private struct ResultIterator : IEnumerable<object>, IEnumerator<object>
         {
             private readonly NpgsqlConnection _connection;
+            private readonly bool _ownsConnection;
             private readonly DbDataReader _reader;
             private readonly string[] _names;
             private readonly object[] _values;
 
             public dynamic Current { get; private set; }
 
-            public ResultIterator(NpgsqlConnection connection, DbDataReader reader)
+            public ResultIterator(NpgsqlConnection connection, bool ownsConnection, DbDataReader reader)
             {
                 _connection = connection;
+                _ownsConnection = ownsConnection;
                 _reader = reader;
 
                 _names = new string[_reader.FieldCount];
@@ -86,8 +88,10 @@ namespace MondBot
 
             public void Dispose()
             {
-                _connection.Dispose();
                 _reader.Dispose();
+
+                if (_ownsConnection)
+                    _connection.Dispose();
             }
 
             public IEnumerator<object> GetEnumerator()
@@ -120,17 +124,27 @@ namespace MondBot
 
         public async Task ExecuteNonQuery()
         {
-            using (_command.Connection)
+            try
             {
                 await _command.ExecuteNonQueryAsync();
+            }
+            finally
+            {
+                if (_ownsConnection)
+                    _connection.Dispose();
             }
         }
 
         public async Task<object> ExecuteScalar()
         {
-            using (_command.Connection)
+            try
             {
                 return await _command.ExecuteScalarAsync();
+            }
+            finally
+            {
+                if (_ownsConnection)
+                    _connection.Dispose();
             }
         }
     }

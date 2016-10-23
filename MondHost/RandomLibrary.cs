@@ -11,62 +11,66 @@ namespace MondHost
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new ErrorLibrary();
             yield return new CharLibrary();
             yield return new MathLibrary();
-            yield return new BetterRandomLibrary();
+            yield return new BetterRandomLibrary(state);
         }
     }
 
     class BetterRandomLibrary : IMondLibrary
     {
+        private readonly MondState _state;
+
+        public BetterRandomLibrary(MondState state)
+        {
+            _state = state;
+        }
+
         public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
         {
-            var randomClass = MondClassBinder.Bind<BetterRandomClass>();
-            yield return new KeyValuePair<string, MondValue>("Random", randomClass);
+            var randomModule = MondModuleBinder.Bind(typeof(BetterRandomModule), _state);
+            yield return new KeyValuePair<string, MondValue>("Random", randomModule);
         }
     }
 
-    [MondClass("Random")]
-    class BetterRandomClass
+    [MondModule("Random")]
+    static class BetterRandomModule
     {
-        private static int _count;
-        private readonly Random _random;
+        private static readonly Random Random;
 
-        [MondConstructor]
-        public BetterRandomClass()
+        static BetterRandomModule()
         {
-            _random = new Random(Environment.TickCount + Interlocked.Increment(ref _count));
+            Random = new Random(Environment.TickCount);
         }
 
-        [MondConstructor]
-        public BetterRandomClass(int seed)
+        [MondFunction("__call")]
+        public static MondValue Call(MondState state, MondValue self, params MondValue[] args)
         {
-            _random = new Random(seed);
-        }
-
-        [MondFunction("next")]
-        public int Next()
-        {
-            return _random.Next();
+            return state["Random"]; // backwards compat
         }
 
         [MondFunction("next")]
-        public int Next(int maxValue)
+        public static int Next()
         {
-            return _random.Next(maxValue);
+            return Random.Next();
         }
 
         [MondFunction("next")]
-        public int Next(int minValue, int maxValue)
+        public static int Next(int maxValue)
         {
-            return _random.Next(minValue, maxValue);
+            return Random.Next(maxValue);
+        }
+
+        [MondFunction("next")]
+        public static int Next(int minValue, int maxValue)
+        {
+            return Random.Next(minValue, maxValue);
         }
 
         [MondFunction("nextDouble")]
-        public double NextDouble()
+        public static double NextDouble()
         {
-            return _random.NextDouble();
+            return Random.NextDouble();
         }
     }
 }

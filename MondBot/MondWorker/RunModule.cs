@@ -7,7 +7,7 @@ namespace MondBot
     {
         private static readonly WorkerManager WorkerManager = new WorkerManager();
 
-        public static async Task<string> Run(string source)
+        public static async Task<string> Run(string username, string source)
         {
             if (string.IsNullOrWhiteSpace(source))
                 return null;
@@ -23,7 +23,7 @@ namespace MondBot
                 try
                 {
                     // make it do work
-                    var result = await worker.Run(source).ConfigureAwait(false);
+                    var result = await worker.Run(username, source).ConfigureAwait(false);
 
                     // reuse the worker
                     WorkerManager.Enqueue(worker);
@@ -45,6 +45,7 @@ namespace MondBot
             }
             catch (Exception e)
             {
+                Console.WriteLine(e);
                 return "EXCEPTION: " + e.Message;
             }
         }
