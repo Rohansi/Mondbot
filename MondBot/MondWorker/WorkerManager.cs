@@ -138,8 +138,8 @@ namespace MondBot
                 if (RunningOnMono)
                 {
                     startInfo.FileName = "mono";
-                    startInfo.Arguments = "MondHost.exe";
-                    startInfo.EnvironmentVariables.Add("MONO_GC_PARAMS", "max-heap-size=80M,soft-heap-limit=30M,nursery-size=4M");
+                    startInfo.Arguments = "--debug MondHost.exe";
+                    startInfo.EnvironmentVariables.Add("MONO_GC_PARAMS", "max-heap-size=256M,soft-heap-limit=128M,nursery-size=16M");
                 }
 
                 var process = Process.Start(startInfo);

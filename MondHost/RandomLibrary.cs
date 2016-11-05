@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
 using Mond;
 using Mond.Binding;
 using Mond.Libraries;
@@ -11,6 +10,7 @@ namespace MondHost
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
+            yield return new ErrorLibrary();
             yield return new CharLibrary();
             yield return new MathLibrary();
             yield return new BetterRandomLibrary(state);

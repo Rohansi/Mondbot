@@ -41,6 +41,9 @@ namespace MondHost
             if (depth >= 32)
                 throw new MondRuntimeException("Json.serialize: maximum depth exceeded");
 
+            if (sb.Length >= 1 * 1024 * 1024)
+                throw new MondRuntimeException("Json.serialize: maxiumum size exceeded");
+
             var first = true;
 
             switch (value.Type)

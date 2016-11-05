@@ -22,6 +22,7 @@ namespace MondHost
 
         private MondState _state;
         private Dictionary<string, MondValue> _variableCache;
+        private MondValue _username;
 
         public Worker()
         {
@@ -39,6 +40,8 @@ namespace MondHost
                 using (_connection = Database.CreateConnection())
                 {
                     _transaction = _connection.BeginTransaction();
+
+                    _username = username;
 
                     _state = new MondState
                     {
@@ -63,8 +66,6 @@ namespace MondHost
                     });
 
                     _state.EnsureLibrariesLoaded();
-
-                    _state["username"] = username;
 
                     _variableCache = new Dictionary<string, MondValue>();
 
@@ -138,6 +139,9 @@ namespace MondHost
 
             var name = (string)args[1];
 
+            if (name == "username")
+                return _username;
+
             MondValue value;
             if (_variableCache.TryGetValue(name, out value))
                 return value;
@@ -156,6 +160,9 @@ namespace MondHost
                 throw new MondRuntimeException("VariableObject.__set: requires 3 parameters");
 
             var name = (string)args[1];
+            if (name == "username")
+                return _username;
+            
             var value = args[2];
 
             StoreVariable(name, value);
