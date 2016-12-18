@@ -54,21 +54,19 @@ namespace MondBot
                 return;
             }
 
-            var largestImage = message.Photo
-                .OrderByDescending(p => p.Width * p.Height)
-                .First();
-
-            var image = await Bot.GetFileAsync(largestImage.FileId);
+            var photo = message.GetPhoto();
+            var image = await Bot.GetFileAsync(photo.FileId);
 
             var imageData = new byte[image.FileStream.Length];
             await image.FileStream.ReadAsync(imageData, 0, imageData.Length);
 
-            var cmd = new SqlCommand(@"INSERT INTO mondbot.images (chat_id, sender_id, date, image) VALUES (:chatId, :senderId, :date, :image);")
+            var cmd = new SqlCommand(@"INSERT INTO mondbot.images (chat_id, sender_id, date, image, file_id) VALUES (:chatId, :senderId, :date, :image, :fileId);")
             {
                 ["chatId"] = message.Chat.Id,
                 ["senderId"] = message.From.Id,
                 ["date"] = message.Date,
-                ["image"] = imageData
+                ["image"] = imageData,
+                ["fileId"] = photo.FileId
             };
 
             using (cmd)
@@ -136,11 +134,42 @@ namespace MondBot
             var cmd = new SqlCommand(@"SELECT * FROM mondbot.images OFFSET floor(random() * (SELECT COUNT(*) FROM mondbot.images)) LIMIT 1;");
             using (cmd)
             {
-                var result = (await cmd.Execute()).Single();
+                var result = (await cmd.Execute()).SingleOrDefault();
 
-                var stream = new MemoryStream((byte[])result.image);
+                if (result == null)
+                {
+                    await Bot.SendTextMessageAsync(chatId, "I need more images!");
+                    return;
+                }
 
-                await Bot.SendPhotoAsync(chatId, new FileToSend("photo.jpg", stream));
+                if (result.file_id != null)
+                {
+                    await Bot.SendPhotoAsync(chatId, result.file_id);
+                }
+                else
+                {
+                    var stream = new MemoryStream((byte[])result.image);
+                    var message = await Bot.SendPhotoAsync(chatId, new FileToSend("photo.jpg", stream));
+
+                    var photo = message.GetPhoto();
+                    if (photo == null)
+                    {
+                        Console.WriteLine("Failed to upgrade row! No file ID given.");
+                        return;
+                    }
+
+                    var update = new SqlCommand(@"UPDATE mondbot.images SET file_id = :fileId WHERE image_id = :imageId;")
+                    {
+                        ["imageId"] = result.image_id,
+                        ["fileId"] = photo.FileId
+                    };
+                    using (update)
+                    {
+                        await update.ExecuteNonQuery();
+                    }
+
+                    Console.WriteLine("Updated row with file ID!");
+                }
             }
         }
 
