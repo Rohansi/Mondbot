@@ -60,18 +60,18 @@ namespace MondBot
             Console.WriteLine("Run on {0}", Process.Id);
 
             var stream = _socket.GetStream();
-            var sendStream = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true };
-            var receiveStream = new StreamReader(stream, new UTF8Encoding(false));
+            var sendStream = new BinaryWriter(stream, new UTF8Encoding(false)); //  { AutoFlush = true };
+            var receiveStream = new BinaryReader(stream, new UTF8Encoding(false));
 
             // send username and source
-            await sendStream.WriteLineAsync(Encode(username));
-            await sendStream.WriteLineAsync(Encode(source));
+            await sendStream.WriteStringAsync(username);
+            await sendStream.WriteStringAsync(source);
 
             var timeout = _isNew ? 17 : 15;
             _isNew = false;
 
             // wait for output or timeout
-            var output = receiveStream.ReadLineAsync();
+            var output = receiveStream.ReadStringAsync();
             var completed = await Task.WhenAny(output, Task.Delay(TimeSpan.FromSeconds(timeout)));
 
             // if output didn't complete then we timed out
@@ -84,73 +84,8 @@ namespace MondBot
             {
                 throw new RunException("Host Process Died"); // TODO: does this still work
             }
-
-            return Decode(result);
-        }
-
-        private static string Encode(string input)
-        {
-            var sb = new StringBuilder(input.Length);
-
-            foreach (var ch in input)
-            {
-                switch (ch)
-                {
-                    case '\\':
-                        sb.Append("\\\\");
-                        break;
-                    case '\r':
-                        sb.Append("\\r");
-                        break;
-                    case '\n':
-                        sb.Append("\\n");
-                        break;
-                    default:
-                        sb.Append(ch);
-                        break;
-                }
-            }
-
-            return sb.ToString();
-        }
-
-        private static string Decode(string input)
-        {
-            var sb = new StringBuilder(input.Length);
-
-            for (var i = 0; i < input.Length; i++)
-            {
-                var ch = input[i];
-
-                if (ch != '\\')
-                {
-                    sb.Append(ch);
-                    continue;
-                }
-
-                if (++i >= input.Length)
-                    return sb.ToString(); // unexpected eof
-
-                switch (input[i])
-                {
-                    case '\\':
-                        sb.Append('\\');
-                        break;
-
-                    case 'r':
-                        sb.Append('\r');
-                        break;
-
-                    case 'n':
-                        sb.Append('\n');
-                        break;
-
-                    default:
-                        throw new NotSupportedException("Decode: \\" + input[i]);
-                }
-            }
-
-            return sb.ToString();
+            
+            return result;
         }
     }
 }

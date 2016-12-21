@@ -46,6 +46,7 @@
     <Reference Include="System.Net.Http" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BinaryStreamExt.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="SqlCommand.cs" />
     <Compile Include="SqlResult.cs" />

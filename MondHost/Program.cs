@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using MondBot;
 
 namespace MondHost
 {
@@ -23,13 +24,13 @@ namespace MondHost
             await socket.ConnectAsync(IPAddress.Loopback, 35555);
 
             var stream = socket.GetStream();
-            var sendStream = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true };
-            var receiveStream = new StreamReader(stream, new UTF8Encoding(false));
+            var sendStream = new BinaryWriter(stream, new UTF8Encoding(false)); //  { AutoFlush = true };
+            var receiveStream = new BinaryReader(stream, new UTF8Encoding(false));
 
             var workerId = Process.GetCurrentProcess().Id;
-            await sendStream.WriteLineAsync(workerId.ToString("G"));
+            await sendStream.WriteInt32Async(workerId);
 
-            var response = await receiveStream.ReadLineAsync();
+            var response = await receiveStream.ReadStringAsync();
             if (response != "OK")
                 return;
 
@@ -39,17 +40,17 @@ namespace MondHost
             {
                 GC.Collect();
 
-                var username = await receiveStream.ReadLineAsync();
+                var username = await receiveStream.ReadStringAsync();
                 if (username == null)
                     return;
 
-                var source = await receiveStream.ReadLineAsync();
+                var source = await receiveStream.ReadStringAsync();
                 if (source == null)
                     return;
 
                 var result = worker.Run(username, source);
 
-                await sendStream.WriteLineAsync(result);
+                await sendStream.WriteStringAsync(result);
             }
         }
     }

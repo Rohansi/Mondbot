@@ -219,10 +219,10 @@ namespace MondBot
                     socket.NoDelay = true;
 
                     var stream = socket.GetStream();
-                    var sendStream = new StreamWriter(stream) { AutoFlush = true };
-                    var receiveStream = new StreamReader(stream);
+                    var sendStream = new BinaryWriter(stream); // { AutoFlush = true };
+                    var receiveStream = new BinaryReader(stream);
 
-                    var workerIdTask = receiveStream.ReadLineAsync();
+                    var workerIdTask = receiveStream.ReadInt32Async();
                     var completed = await Task.WhenAny(workerIdTask, Task.Delay(TimeSpan.FromSeconds(2.5), cancellationToken));
 
                     if (completed != workerIdTask)
@@ -232,16 +232,7 @@ namespace MondBot
                         continue;
                     }
 
-                    var workerIdStr = workerIdTask.Result;
-
-                    int workerId;
-                    if (!int.TryParse(workerIdStr, out workerId))
-                    {
-                        Console.WriteLine("WorkerListener: Invalid WorkerId");
-                        socket.Close();
-                        continue;
-                    }
-
+                    var workerId = workerIdTask.Result;
                     var process = Process.GetProcessById(workerId);
                     var worker = new Worker(process, socket);
 
@@ -251,7 +242,7 @@ namespace MondBot
                         _idleWorkers.Enqueue(worker);
                     }
 
-                    await sendStream.WriteLineAsync("OK");
+                    await sendStream.WriteStringAsync("OK");
                 }
                 catch (Exception e)
                 {

@@ -77,7 +77,7 @@ namespace MondHost
                     _state["__get"] = variableGetter;
                     _state["__set"] = variableSetter;
 
-                    var program = Decode(source);
+                    var program = source;
 
                     GC.Collect();
 
@@ -129,7 +129,7 @@ namespace MondHost
                 output.WriteLine(e.Message);
             }
 
-            return Encode(_outputBuffer.ToString());
+            return _outputBuffer.ToString();
         }
 
         private MondValue VariableGetter(MondState state, params MondValue[] args)
@@ -220,71 +220,6 @@ namespace MondHost
             {
                 cmd.ExecuteNonQuery().Wait();
             }
-        }
-
-        private static string Encode(string input)
-        {
-            var sb = new StringBuilder(input.Length);
-
-            foreach (var ch in input)
-            {
-                switch (ch)
-                {
-                    case '\\':
-                        sb.Append("\\\\");
-                        break;
-                    case '\r':
-                        sb.Append("\\r");
-                        break;
-                    case '\n':
-                        sb.Append("\\n");
-                        break;
-                    default:
-                        sb.Append(ch);
-                        break;
-                }
-            }
-
-            return sb.ToString();
-        }
-
-        private static string Decode(string input)
-        {
-            var sb = new StringBuilder(4096);
-
-            for (var i = 0; i < input.Length; i++)
-            {
-                var ch = input[i];
-
-                if (ch != '\\')
-                {
-                    sb.Append(ch);
-                    continue;
-                }
-
-                if (++i >= input.Length)
-                    return sb.ToString(); // unexpected eof
-
-                switch (input[i])
-                {
-                    case '\\':
-                        sb.Append('\\');
-                        break;
-
-                    case 'r':
-                        sb.Append('\r');
-                        break;
-
-                    case 'n':
-                        sb.Append('\n');
-                        break;
-
-                    default:
-                        throw new NotSupportedException("Decode: \\" + input[i]);
-                }
-            }
-
-            return sb.ToString();
         }
     }
 }
