@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="BinaryStreamExt.cs" />
     <Compile Include="Database.cs" />
+    <Compile Include="RunResult.cs" />
     <Compile Include="SqlCommand.cs" />
     <Compile Include="SqlResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

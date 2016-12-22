@@ -2,6 +2,8 @@
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -14,6 +16,29 @@ namespace MondBot
     public class WebHookController : ApiController
     {
         private static TelegramBotClient Bot => Program.Bot;
+
+        public async Task<HttpResponseMessage> Get()
+        {
+            var result = await RunModule.Run("Rohansi", @"
+const red = Color(255, 0, 0);
+const green = Color(0, 255, 0);
+const blue = Color(0, 0, 255);
+const black = Color(0, 0, 0);
+const white = Color(255, 255, 255);
+
+Image.clear(black);
+Image.drawRectangle(20, 20, Image.getWidth() - 40, Image.getHeight() - 40, red, 10);
+Image.drawString(""Hello, world!"", 100, 100, white);
+Image.fillEllipse(100, 200, 75, 100, blue);
+Image.drawLine(125, 290, 100, 400, white, 5);
+");
+
+
+            var response = new HttpResponseMessage(HttpStatusCode.OK);
+            response.Content = new ByteArrayContent(result.Image);
+            response.Content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+            return response;
+        }
 
         public async Task<IHttpActionResult> Post(Update update)
         {
@@ -60,14 +85,16 @@ namespace MondBot
             var imageData = new byte[image.FileStream.Length];
             await image.FileStream.ReadAsync(imageData, 0, imageData.Length);
 
-            var cmd = new SqlCommand(@"INSERT INTO mondbot.images (chat_id, sender_id, date, image, file_id) VALUES (:chatId, :senderId, :date, :image, :fileId);")
-            {
-                ["chatId"] = message.Chat.Id,
-                ["senderId"] = message.From.Id,
-                ["date"] = message.Date,
-                ["image"] = imageData,
-                ["fileId"] = photo.FileId
-            };
+            var cmd =
+                new SqlCommand(
+                    @"INSERT INTO mondbot.images (chat_id, sender_id, date, image, file_id) VALUES (:chatId, :senderId, :date, :image, :fileId);")
+                {
+                    ["chatId"] = message.Chat.Id,
+                    ["senderId"] = message.From.Id,
+                    ["date"] = message.Date,
+                    ["image"] = imageData,
+                    ["fileId"] = photo.FileId
+                };
 
             using (cmd)
             {
@@ -131,7 +158,9 @@ namespace MondBot
 
         private static async Task SendRandomPhoto(long chatId)
         {
-            var cmd = new SqlCommand(@"SELECT * FROM mondbot.images OFFSET floor(random() * (SELECT COUNT(*) FROM mondbot.images)) LIMIT 1;");
+            var cmd =
+                new SqlCommand(
+                    @"SELECT * FROM mondbot.images OFFSET floor(random() * (SELECT COUNT(*) FROM mondbot.images)) LIMIT 1;");
             using (cmd)
             {
                 var result = (await cmd.Execute()).SingleOrDefault();
@@ -158,11 +187,12 @@ namespace MondBot
                         return;
                     }
 
-                    var update = new SqlCommand(@"UPDATE mondbot.images SET file_id = :fileId WHERE image_id = :imageId;")
-                    {
-                        ["imageId"] = result.image_id,
-                        ["fileId"] = photo.FileId
-                    };
+                    var update =
+                        new SqlCommand(@"UPDATE mondbot.images SET file_id = :fileId WHERE image_id = :imageId;")
+                        {
+                            ["imageId"] = result.image_id,
+                            ["fileId"] = photo.FileId
+                        };
                     using (update)
                     {
                         await update.ExecuteNonQuery();
@@ -189,10 +219,23 @@ namespace MondBot
                 return;
 
             var result = await RunModule.Run(message.GetUsername(), code + ";");
-            if (string.IsNullOrWhiteSpace(result))
+            if (string.IsNullOrWhiteSpace(result.Output))
                 return;
 
-            var resultEncoded = WebUtility.HtmlEncode(result);
+            if (result.Image != null && result.Image.Length > 0)
+            {
+                try
+                {
+                    var stream = new MemoryStream(result.Image);
+                    await Bot.SendPhotoAsync(message.Chat.Id, new FileToSend("photo.png", stream));
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Failed to send image: {e}");
+                }
+            }
+
+            var resultEncoded = WebUtility.HtmlEncode(result.Output);
             var resultHtml = "<pre>" + resultEncoded + "</pre>";
             await Bot.SendTextMessageAsync(message.Chat.Id, resultHtml, parseMode: ParseMode.Html, replyToMessageId: message.MessageId);
         }
@@ -210,7 +253,7 @@ namespace MondBot
             var name = match.Groups[1].Value;
             var code = match.Groups[2].Value;
 
-            var result = await RunModule.Run(message.GetUsername(), $"print({code});");
+            var result = (await RunModule.Run(message.GetUsername(), $"print({code});")).Output;
 
             if (result.StartsWith("ERROR:") || result.StartsWith("EXCEPTION:") || result.StartsWith("mondbox"))
             {

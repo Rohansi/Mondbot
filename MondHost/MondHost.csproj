@@ -48,10 +48,12 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HttpLibrary.cs" />
+    <Compile Include="ImageLibrary.cs" />
     <Compile Include="JsonLibrary.cs" />
     <Compile Include="JsonLibrary.Deserialize.cs" />
     <Compile Include="LimitedTextWriter.cs" />

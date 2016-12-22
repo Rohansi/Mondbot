@@ -29,7 +29,7 @@ namespace MondHost
             _outputBuffer = new StringBuilder(MaxOutputChars);
         }
 
-        public string Run(string username, string source)
+        public RunResult Run(string username, string source)
         {
             _outputBuffer.Clear();
 
@@ -56,6 +56,7 @@ namespace MondHost
                             new ConsoleOutputLibraries(),
                             new ModifiedJsonLibraries(),
                             new HttpLibraries(),
+                            new ImageLibraries(),
                         }
                     };
 
@@ -129,7 +130,7 @@ namespace MondHost
                 output.WriteLine(e.Message);
             }
 
-            return _outputBuffer.ToString();
+            return new RunResult(_outputBuffer.ToString(), ImageModule.GetImageData());
         }
 
         private MondValue VariableGetter(MondState state, params MondValue[] args)

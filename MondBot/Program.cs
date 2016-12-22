@@ -1,8 +1,4 @@
 ﻿using System;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
 using System.Web.Http;
 using Microsoft.Owin.Hosting;
 using Owin;
@@ -24,7 +20,7 @@ namespace MondBot
             using (WebApp.Start<Startup>("http://+:8134"))
             {
                 // Register WebHook
-                Bot.SetWebhook("https://toronto.rohbot.net/mondbot/WebHook").Wait();
+                Bot.SetWebhookAsync("https://toronto.rohbot.net/mondbot/WebHook").Wait();
 
                 Console.WriteLine("Server Started");
 
@@ -32,7 +28,7 @@ namespace MondBot
                 Console.ReadLine();
 
                 // Unregister WebHook
-                Bot.SetWebhook().Wait();
+                Bot.SetWebhookAsync().Wait();
             }
         }
 

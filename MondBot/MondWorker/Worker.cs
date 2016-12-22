@@ -55,7 +55,7 @@ namespace MondBot
             catch { }
         }
 
-        public async Task<string> Run(string username, string source)
+        public async Task<RunResult> Run(string username, string source)
         {
             Console.WriteLine("Run on {0}", Process.Id);
 
@@ -67,25 +67,30 @@ namespace MondBot
             await sendStream.WriteStringAsync(username);
             await sendStream.WriteStringAsync(source);
 
-            var timeout = _isNew ? 17 : 15;
+            var timeout = _isNew ? 18 : 15;
             _isNew = false;
 
             // wait for output or timeout
-            var output = receiveStream.ReadStringAsync();
-            var completed = await Task.WhenAny(output, Task.Delay(TimeSpan.FromSeconds(timeout)));
+            var result = ReadResult(receiveStream);
+            var completed = await Task.WhenAny(result, Task.Delay(TimeSpan.FromSeconds(timeout)));
 
             // if output didn't complete then we timed out
-            if (completed != output)
+            if (completed != result)
                 throw new RunException("Timed Out");
-
-            var result = output.Result;
             
             if (Process.HasExited)
             {
                 throw new RunException("Host Process Died"); // TODO: does this still work
             }
             
-            return result;
+            return result.Result;
+        }
+
+        private async Task<RunResult> ReadResult(BinaryReader receiveStream)
+        {
+            var output = await receiveStream.ReadStringAsync();
+            var image = await receiveStream.ReadBytesAsync();
+            return new RunResult(output, image);
         }
     }
 }

@@ -50,7 +50,8 @@ namespace MondHost
 
                 var result = worker.Run(username, source);
 
-                await sendStream.WriteStringAsync(result);
+                await sendStream.WriteStringAsync(result.Output);
+                await sendStream.WriteBytesAsync(result.Image);
             }
         }
     }
