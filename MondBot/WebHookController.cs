@@ -219,15 +219,13 @@ Image.drawLine(125, 290, 100, 400, white, 5);
                 return;
 
             var result = await RunModule.Run(message.GetUsername(), code + ";");
-            if (string.IsNullOrWhiteSpace(result.Output))
-                return;
 
             if (result.Image != null && result.Image.Length > 0)
             {
                 try
                 {
                     var stream = new MemoryStream(result.Image);
-                    await Bot.SendPhotoAsync(message.Chat.Id, new FileToSend("photo.png", stream));
+                    await Bot.SendPhotoAsync(message.Chat.Id, new FileToSend("photo.png", stream), replyToMessageId: message.MessageId);
                 }
                 catch (Exception e)
                 {
@@ -235,9 +233,12 @@ Image.drawLine(125, 290, 100, 400, white, 5);
                 }
             }
 
-            var resultEncoded = WebUtility.HtmlEncode(result.Output);
-            var resultHtml = "<pre>" + resultEncoded + "</pre>";
-            await Bot.SendTextMessageAsync(message.Chat.Id, resultHtml, parseMode: ParseMode.Html, replyToMessageId: message.MessageId);
+            if (!string.IsNullOrWhiteSpace(result.Output))
+            {
+                var resultEncoded = WebUtility.HtmlEncode(result.Output);
+                var resultHtml = "<pre>" + resultEncoded + "</pre>";
+                await Bot.SendTextMessageAsync(message.Chat.Id, resultHtml, parseMode: ParseMode.Html, replyToMessageId: message.MessageId);
+            }
         }
 
         private static readonly Regex AddCommandRegex = new Regex(@"^\s*(\w+|[\.\=\+\-\*\/\%\&\|\^\~\<\>\!\?]+)\s+(.+)$", RegexOptions.Singleline);
