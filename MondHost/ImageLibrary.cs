@@ -36,7 +36,7 @@ namespace MondHost
         }
     }
 
-    [MondModule("Http")]
+    [MondModule("Image")]
     static class ImageModule
     {
         #region Fonts
@@ -175,7 +175,7 @@ namespace MondHost
         public int Alpha => Color.A;
 
         [MondFunction("__serialize")]
-        public MondValue Serialize(MondState state)
+        public MondValue Serialize(MondState state, params MondValue[] args)
         {
             return new MondValue(state)
             {

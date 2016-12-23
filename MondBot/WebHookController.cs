@@ -17,7 +17,7 @@ namespace MondBot
     {
         private static TelegramBotClient Bot => Program.Bot;
 
-        public async Task<HttpResponseMessage> Get()
+        public async Task<HttpResponseMessage> Get(string type)
         {
             var result = await RunModule.Run("Rohansi", @"
 const red = Color(255, 0, 0);
@@ -31,12 +31,21 @@ Image.drawRectangle(20, 20, Image.getWidth() - 40, Image.getHeight() - 40, red, 
 Image.drawString(""Hello, world!"", 100, 100, white);
 Image.fillEllipse(100, 200, 75, 100, blue);
 Image.drawLine(125, 290, 100, 400, white, 5);
+
+return Json.serialize(green);
 ");
 
-
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Content = new ByteArrayContent(result.Image);
-            response.Content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+            if (type == "image")
+            {
+                response.Content = new ByteArrayContent(result.Image);
+                response.Content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+            }
+            else
+            {
+                response.Content = new StringContent(result.Output);
+                response.Content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+            }
             return response;
         }
 
