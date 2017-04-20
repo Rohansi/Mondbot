@@ -57,6 +57,7 @@ namespace MondHost
                             new ModifiedJsonLibraries(),
                             new HttpLibraries(),
                             new ImageLibraries(),
+                            new RantLibraries(),
                         }
                     };
 
