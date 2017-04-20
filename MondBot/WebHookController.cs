@@ -19,7 +19,7 @@ namespace MondBot
 
         public async Task<HttpResponseMessage> Get(string type)
         {
-            var result = await RunModule.Run("Rohansi", @"
+            const string imageTest = @"
 const red = Color(255, 0, 0);
 const green = Color(0, 255, 0);
 const blue = Color(0, 0, 255);
@@ -32,8 +32,11 @@ Image.drawString(""Hello, world!"", 100, 100, white);
 Image.fillEllipse(100, 200, 75, 100, blue);
 Image.drawLine(125, 290, 100, 400, white, 5);
 
-return Json.serialize(green);
-");
+return Json.serialize(green);";
+
+            const string rantTest = @"return Rant.run(""<verb> me pls"");";
+
+            var result = await RunModule.Run("Rohansi", rantTest);
 
             var response = new HttpResponseMessage(HttpStatusCode.OK);
             if (type == "image")

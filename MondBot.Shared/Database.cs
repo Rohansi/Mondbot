@@ -24,7 +24,7 @@ namespace MondBot
 
         public static NpgsqlConnection CreateConnection()
         {
-            var connection = new NpgsqlConnection(ConnectionStr);
+            var connection = new NpgsqlConnection(ConnectionStr.ToString());
             connection.Open();
             return connection;
         }
