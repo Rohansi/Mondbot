@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.IO;
@@ -52,8 +54,13 @@ namespace MondHost
 
         private static Font GetFont(int size)
         {
-            Font cachedFont;
-            if (_fonts.TryGetValue(size, out cachedFont))
+            if (size <= 8)
+                size = 8;
+
+            if (size > 64)
+                size = 64;
+
+            if (_fonts.TryGetValue(size, out var cachedFont))
                 return cachedFont;
 
             var newFont = new Font(_fontFamily, size, FontStyle.Regular, GraphicsUnit.Pixel);
@@ -63,17 +70,24 @@ namespace MondHost
         #endregion
 
         #region Bitmap
-        private const int BitmapWidth = 480;
-        private const int BitmapHeight = 640;
+        private const int BitmapWidth = 400;
+        private const int BitmapHeight = 400;
 
         private static Bitmap _bitmap;
         private static Graphics _graphics;
+        private static Pen _pen;
+        private static Brush _brush;
+        private static LineCap _lineCap;
+        private static float _rotation;
 
         private static Bitmap Bitmap => _bitmap ?? (_bitmap = new Bitmap(BitmapWidth, BitmapHeight));
         private static Graphics Graphics => _graphics ?? (_graphics = Graphics.FromImage(Bitmap));
 
         public static byte[] GetImageData()
         {
+            _lineCap = LineCap.Flat;
+            _rotation = 0;
+
             if (_bitmap == null)
                 return new byte[0];
 
@@ -94,6 +108,39 @@ namespace MondHost
 
             return ms.ToArray();
         }
+
+        private static LineCap ParseLineCap(string value)
+        {
+            if (!Enum.TryParse<LineCap>(value, true, out var newCap) || newCap == LineCap.Custom)
+                newCap = LineCap.Flat;
+
+            return newCap;
+        }
+
+        private static Pen CreatePen(MondColor color, float thickness = 1)
+        {
+            if (_pen != null)
+            {
+                _pen.Dispose();
+                _pen = null;
+            }
+
+            _pen = new Pen(color.Color, thickness);
+            _pen.SetLineCap(_lineCap, _lineCap, DashCap.Flat);
+            return _pen;
+        }
+
+        private static Brush CreateBrush(MondColor color)
+        {
+            if (_brush != null)
+            {
+                _brush.Dispose();
+                _brush = null;
+            }
+
+            _brush = new SolidBrush(color.Color);
+            return _brush;
+        }
         #endregion
 
         [MondFunction]
@@ -102,47 +149,63 @@ namespace MondHost
         [MondFunction]
         public static int Height => BitmapHeight;
 
-        [MondFunction("clear")]
-        public static void Clear(MondColor color)
+        [MondFunction]
+        public static string Cap
         {
-            Graphics.Clear(color.Color);
+            get => _lineCap.ToString();
+            set => _lineCap = ParseLineCap(value);
         }
+
+        [MondFunction]
+        public static float Rotation
+        {
+            get => _rotation;
+            set
+            {
+                Graphics.ResetTransform();
+                Graphics.RotateTransform(value);
+                _rotation = value;
+            }
+        }
+
+        [MondFunction("clear")]
+        public static void Clear(MondColor color) => Graphics.Clear(color.Color);
 
         [MondFunction("drawLine")]
-        public static void DrawLine(float x1, float y1, float x2, float y2, MondColor color, float thickness = 1)
-        {
-            Graphics.DrawLine(new Pen(color.Color, thickness), x1, y1, x2, y2);
-        }
+        public static void DrawLine(float x1, float y1, float x2, float y2, MondColor color, float thickness = 1) =>
+            Graphics.DrawLine(CreatePen(color, thickness), x1, y1, x2, y2);
+
+        [MondFunction("drawArc")]
+        public static void DrawArc(float x, float y, float width, float height, float startAngle, float sweepAngle, MondColor color, float thickness = 1) =>
+            Graphics.DrawArc(CreatePen(color, thickness), x, y, width, height, startAngle, sweepAngle);
 
         [MondFunction("drawString")]
-        public static void DrawString(string str, float x, float y, MondColor color, int size = 32)
-        {
-            Graphics.DrawString(str, GetFont(size), new SolidBrush(color.Color), x, y);
-        }
+        public static void DrawString(string str, float x, float y, MondColor color, int size = 32) =>
+            Graphics.DrawString(str, GetFont(size), CreateBrush(color), x, y);
 
         [MondFunction("drawRectangle")]
-        public static void DrawRectangle(float x, float y, float width, float height, MondColor color, float thickness = 1)
-        {
-            Graphics.DrawRectangle(new Pen(color.Color, thickness), x, y, width, height);
-        }
+        public static void DrawRectangle(float x, float y, float width, float height, MondColor color, float thickness = 1) =>
+            Graphics.DrawRectangle(CreatePen(color, thickness), x, y, width, height);
+
+        [MondFunction("drawRoundedRectangle")]
+        public static void DrawRoundedRectangle(float x, float y, float width, float height, float radius, MondColor color, float thickness = 1) =>
+            Graphics.DrawRoundedRectangle(CreatePen(color, thickness), new RectangleF(x, y, width, height), radius);
 
         [MondFunction("drawEllipse")]
-        public static void DrawEllipse(float x, float y, float width, float height, MondColor color, float thickness = 1)
-        {
-            Graphics.DrawEllipse(new Pen(color.Color, thickness), x, y, width, height);
-        }
+        public static void DrawEllipse(float x, float y, float width, float height, MondColor color, float thickness = 1) =>
+            Graphics.DrawEllipse(CreatePen(color, thickness), x, y, width, height);
 
         [MondFunction("fillRectangle")]
-        public static void FillRectangle(float x, float y, float width, float height, MondColor color)
-        {
-            Graphics.FillRectangle(new SolidBrush(color.Color), x, y, width, height);
-        }
+        public static void FillRectangle(float x, float y, float width, float height, MondColor color) =>
+            Graphics.FillRectangle(CreateBrush(color), x, y, width, height);
+
+        [MondFunction("fillRoundedRectangle")]
+        public static void FillRoundedRectangle(float x, float y, float width, float height, float radius, MondColor color) =>
+            Graphics.FillRoundedRectangle(CreateBrush(color), new RectangleF(x, y, width, height), radius);
 
         [MondFunction("fillEllipse")]
-        public static void FillEllipse(float x, float y, float width, float height, MondColor color)
-        {
-            Graphics.FillEllipse(new SolidBrush(color.Color), x, y, width, height);
-        }
+        public static void FillEllipse(float x, float y, float width, float height, MondColor color) =>
+            Graphics.FillEllipse(CreateBrush(color), x, y, width, height);
     }
 
     [MondClass("Color")]
@@ -151,16 +214,10 @@ namespace MondHost
         public Color Color { get; }
 
         [MondConstructor]
-        public MondColor(int r, int g, int b)
-        {
-            Color = Color.FromArgb(r, g, b);
-        }
+        public MondColor(int r, int g, int b) => Color = Color.FromArgb(r, g, b);
 
         [MondConstructor]
-        public MondColor(int r, int g, int b, int a)
-        {
-            Color = Color.FromArgb(r, g, b, a);
-        }
+        public MondColor(int r, int g, int b, int a) => Color = Color.FromArgb(a, r, g, b);
 
         [MondFunction]
         public int Red => Color.R;

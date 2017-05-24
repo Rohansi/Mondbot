@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Web.Http;
 using Microsoft.Owin.Hosting;
 using Owin;
@@ -8,19 +9,31 @@ namespace MondBot
 {
     class Program
     {
-        public static TelegramBotClient Bot { get; private set; }
+        public static TelegramBotClient TelegramBot { get; private set; }
 
         public static void Main(string[] args)
         {
-            Bot = new TelegramBotClient(Settings.Instance.Token);
+            var telegramThread = new Thread(RunTelegramBot);
+            telegramThread.Start();
 
-            var me = Bot.GetMeAsync().Result;
+            using (var discord = new DiscordBot())
+            {
+                discord.Start().Wait();
+                Thread.Sleep(-1);
+            }
+        }
+
+        private static void RunTelegramBot()
+        {
+            TelegramBot = new TelegramBotClient(Settings.Instance.Token);
+
+            var me = TelegramBot.GetMeAsync().Result;
             Console.WriteLine(me.Username);
 
             using (WebApp.Start<Startup>("http://+:8134"))
             {
                 // Register WebHook
-                Bot.SetWebhookAsync("https://toronto.rohbot.net/mondbot/WebHook").Wait();
+                TelegramBot.SetWebhookAsync("https://toronto.rohbot.net/mondbot/WebHook").Wait();
 
                 Console.WriteLine("Server Started");
 
@@ -28,10 +41,10 @@ namespace MondBot
                 Console.ReadLine();
 
                 // Unregister WebHook
-                Bot.SetWebhookAsync().Wait();
+                TelegramBot.SetWebhookAsync().Wait();
             }
         }
-
+        
         public class Startup
         {
             public void Configuration(IAppBuilder app)

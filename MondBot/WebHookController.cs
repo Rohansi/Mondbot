@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Telegram.Bot;
@@ -15,7 +14,7 @@ namespace MondBot
 {
     public class WebHookController : ApiController
     {
-        private static TelegramBotClient Bot => Program.Bot;
+        private static TelegramBotClient Bot => Program.TelegramBot;
 
         public async Task<HttpResponseMessage> Get(string type)
         {
@@ -131,7 +130,7 @@ return Json.serialize(green);";
                 return false;
 
             var text = message.Text;
-            var commandText = CleanupCommand(text.Substring(commandEntity.Offset, commandEntity.Length));
+            var commandText = Common.CleanupCommand(text.Substring(commandEntity.Offset, commandEntity.Length));
             var remainingText = text.Substring(commandEntity.Offset + commandEntity.Length);
 
             switch (commandText)
@@ -227,16 +226,13 @@ return Json.serialize(green);";
 
         private static async Task RunMondScript(Message message, string code)
         {
-            if (string.IsNullOrWhiteSpace(code))
-                return;
+            var (image, result) = await Common.RunScript(message.GetUsername(), code);
 
-            var result = await RunModule.Run(message.GetUsername(), code + ";");
-
-            if (result.Image != null && result.Image.Length > 0)
+            if (image != null)
             {
                 try
                 {
-                    var stream = new MemoryStream(result.Image);
+                    var stream = new MemoryStream(image);
                     await Bot.SendPhotoAsync(message.Chat.Id, new FileToSend("photo.png", stream), replyToMessageId: message.MessageId);
                 }
                 catch (Exception e)
@@ -245,85 +241,40 @@ return Json.serialize(green);";
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(result.Output))
-            {
-                var resultEncoded = WebUtility.HtmlEncode(result.Output);
-                var resultHtml = "<pre>" + resultEncoded + "</pre>";
-                await Bot.SendTextMessageAsync(message.Chat.Id, resultHtml, parseMode: ParseMode.Html, replyToMessageId: message.MessageId);
-            }
+            if (!string.IsNullOrWhiteSpace(result))
+                await SendMessage(message, result, true);
         }
 
-        private static readonly Regex AddCommandRegex = new Regex(@"^\s*(\w+|[\.\=\+\-\*\/\%\&\|\^\~\<\>\!\?]+)\s+(.+)$", RegexOptions.Singleline);
         private static async Task AddMondMethod(Message message, string parameters)
         {
-            var match = AddCommandRegex.Match(parameters);
-            if (!match.Success)
-            {
-                await Bot.SendTextMessageAsync(message.Chat.Id, "Usage: /method <name> <code>", replyToMessageId: message.MessageId);
-                return;
-            }
-
-            var name = match.Groups[1].Value;
-            var code = match.Groups[2].Value;
-
-            var result = (await RunModule.Run(message.GetUsername(), $"print({code});")).Output;
-
-            if (result.StartsWith("ERROR:") || result.StartsWith("EXCEPTION:") || result.StartsWith("mondbox"))
-            {
-                var resultEncoded = "<pre>" + WebUtility.HtmlEncode(result) + "</pre>";
-                await Bot.SendTextMessageAsync(message.Chat.Id, resultEncoded, replyToMessageId: message.MessageId, parseMode: ParseMode.Html);
-                return;
-            }
-
-            if (result != "function")
-            {
-                await Bot.SendTextMessageAsync(message.Chat.Id, "Method code must actually be a method!", replyToMessageId: message.MessageId);
-                return;
-            }
-
-            var cmd = new SqlCommand(@"INSERT INTO mondbot.variables (name, type, data) VALUES (:name, :type, :data)
-                                       ON CONFLICT (name) DO UPDATE SET type = :type, data = :data;")
-            {
-                ["name"] = name,
-                ["type"] = (int)VariableType.Method,
-                ["data"] = code
-            };
-
-            using (cmd)
-            {
-                await cmd.ExecuteNonQuery();
-            }
-
-            await Bot.SendTextMessageAsync(message.Chat.Id, "Successfully updated method!", replyToMessageId: message.MessageId);
+            var (result, isCode) = await Common.AddMethod(message.GetUsername(), parameters);
+            await SendMessage(message, result, isCode);
         }
 
         private static async Task ViewMondVariable(Message message, string name)
         {
-            var cmd = new SqlCommand(@"SELECT * FROM mondbot.variables WHERE name = :name;")
+            var data = await Common.ViewVariable(name);
+
+            if (data == null)
             {
-                ["name"] = name.Trim()
-            };
-
-            using (cmd)
-            {
-                var result = (await cmd.Execute()).SingleOrDefault();
-
-                if (result == null)
-                {
-                    await Bot.SendTextMessageAsync(message.Chat.Id, "Variable doesn't exist!", replyToMessageId: message.MessageId);
-                    return;
-                }
-
-                string data = result.data;
-                var dataEncoded = "<pre>" + WebUtility.HtmlEncode(data) + "</pre>";
-                await Bot.SendTextMessageAsync(message.Chat.Id, dataEncoded, replyToMessageId: message.MessageId, parseMode: ParseMode.Html);
+                await SendMessage(message, "Variable doesn't exist!");
+                return;
             }
+
+            await SendMessage(message, data, true);
         }
 
-        private static readonly Regex CommandRegex = new Regex(@"[/]+([a-z]+)");
-        private static string CleanupCommand(string command)
+        private static async Task SendMessage(Message replyTo, string text, bool isCode = false)
         {
-            return CommandRegex.Match(command).Groups[1].Value.ToLower();
+            if (isCode)
+            {
+                var resultEncoded = "<pre>" + WebUtility.HtmlEncode(text) + "</pre>";
+                await Bot.SendTextMessageAsync(replyTo.Chat.Id, resultEncoded, replyToMessageId: replyTo.MessageId, parseMode: ParseMode.Html);
+            }
+            else
+            {
+                await Bot.SendTextMessageAsync(replyTo.Chat.Id, text, replyToMessageId: replyTo.MessageId);
+            }
         }
     }
 }
