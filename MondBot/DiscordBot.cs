@@ -82,14 +82,26 @@ namespace MondBot
 
         private async Task DoHelp(DiscordChannel from, string username, string arguments)
         {
-            const string helpMessage = @"I run Mond code for you!
+            var embed = new DiscordEmbed
+            {
+                Description = "I run [Mond](https://github.com/Rohansi/Mond) code for you! My source code can be found on [BitBucket](https://bitbucket.org/rohans/mondbot).",
+                Thumbnail = new DiscordEmbedThumbnail { Url = "http://i.imgur.com/zbqVSaz.png" },
+                Fields = new List<DiscordEmbedField>
+                {
+                    new DiscordEmbedField
+                    {
+                        Name = "Commands",
+                        Value = "+run <code>\n+method <name> <code>\n+view <name>"
+                    },
+                    new DiscordEmbedField
+                    {
+                        Name = "Documentation",
+                        Value = "[Language](https://github.com/Rohansi/Mond/wiki)\n[MondBot extras](https://bitbucket.org/rohans/mondbot/src/master/MondHost/?at=master) (files with Library in the name)"
+                    }
+                }
+            };
 
-+help       Get help
-+run        Run code in the message
-+method     Save a method in the database
-+view       View a method or variable stored in the database";
-
-            await SendMessage(from, helpMessage, true);
+            await from.SendMessageAsync("", embed: embed);
         }
 
         private async Task DoRun(DiscordChannel from, string username, string arguments)

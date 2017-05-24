@@ -75,10 +75,6 @@ namespace MondHost
 
         private static Bitmap _bitmap;
         private static Graphics _graphics;
-        private static Pen _pen;
-        private static Brush _brush;
-        private static LineCap _lineCap;
-        private static float _rotation;
 
         private static Bitmap Bitmap => _bitmap ?? (_bitmap = new Bitmap(BitmapWidth, BitmapHeight));
         private static Graphics Graphics => _graphics ?? (_graphics = Graphics.FromImage(Bitmap));
@@ -108,14 +104,11 @@ namespace MondHost
 
             return ms.ToArray();
         }
+        #endregion
 
-        private static LineCap ParseLineCap(string value)
-        {
-            if (!Enum.TryParse<LineCap>(value, true, out var newCap) || newCap == LineCap.Custom)
-                newCap = LineCap.Flat;
-
-            return newCap;
-        }
+        #region Helpers
+        private static Pen _pen;
+        private static Brush _brush;
 
         private static Pen CreatePen(MondColor color, float thickness = 1)
         {
@@ -141,7 +134,18 @@ namespace MondHost
             _brush = new SolidBrush(color.Color);
             return _brush;
         }
+
+        private static LineCap ParseLineCap(string value)
+        {
+            if (!Enum.TryParse<LineCap>(value, true, out var newCap) || newCap == LineCap.Custom)
+                newCap = LineCap.Flat;
+
+            return newCap;
+        }
         #endregion
+
+        private static LineCap _lineCap;
+        private static float _rotation;
 
         [MondFunction]
         public static int Width => BitmapWidth;

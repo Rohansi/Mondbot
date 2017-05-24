@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Telegram.Bot;
@@ -130,7 +131,7 @@ return Json.serialize(green);";
                 return false;
 
             var text = message.Text;
-            var commandText = Common.CleanupCommand(text.Substring(commandEntity.Offset, commandEntity.Length));
+            var commandText = CleanupCommand(text.Substring(commandEntity.Offset, commandEntity.Length));
             var remainingText = text.Substring(commandEntity.Offset + commandEntity.Length);
 
             switch (commandText)
@@ -275,6 +276,12 @@ return Json.serialize(green);";
             {
                 await Bot.SendTextMessageAsync(replyTo.Chat.Id, text, replyToMessageId: replyTo.MessageId);
             }
+        }
+
+        private static readonly Regex CommandRegex = new Regex(@"[/]+([a-z]+)");
+        public static string CleanupCommand(string command)
+        {
+            return CommandRegex.Match(command).Groups[1].Value.ToLower();
         }
     }
 }

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -11,6 +8,8 @@ namespace MondBot
     {
         public static async Task<(byte[] image, string result)> RunScript(string username, string code)
         {
+            code = CleanupCode(code);
+
             if (string.IsNullOrWhiteSpace(code))
                 return (null, null);
 
@@ -31,7 +30,7 @@ namespace MondBot
                 return ("Usage: /method <name> <code>", false);
 
             var name = match.Groups[1].Value;
-            var code = match.Groups[2].Value;
+            var code = CleanupCode(match.Groups[2].Value);
 
             var result = (await RunModule.Run(username, $"print({code});")).Output;
 
@@ -75,10 +74,9 @@ namespace MondBot
             }
         }
 
-        private static readonly Regex CommandRegex = new Regex(@"[/]+([a-z]+)");
-        public static string CleanupCommand(string command)
+        private static string CleanupCode(string code)
         {
-            return CommandRegex.Match(command).Groups[1].Value.ToLower();
+            return code.Trim().Trim('`');
         }
     }
 }
