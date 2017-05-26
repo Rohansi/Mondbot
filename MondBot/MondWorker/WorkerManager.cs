@@ -39,7 +39,7 @@ namespace MondBot
             _timeSinceLastBlock = Stopwatch.StartNew();
 
             WorkerListener(_cts.Token);
-            WorkerKiller(_cts.Token);
+            WorkerProcessManager(_cts.Token);
         }
 
         public void Dispose()
@@ -153,7 +153,7 @@ namespace MondBot
                         var limitStartInfo = new ProcessStartInfo
                         {
                             FileName = "cpulimit",
-                            Arguments = string.Format("-z -l 33 -p {0:G}", process.Id),
+                            Arguments = string.Format("-z -l 50 -p {0:G}", process.Id),
                             UseShellExecute = false,
                         };
 
@@ -251,7 +251,7 @@ namespace MondBot
             }
         }
 
-        private async void WorkerKiller(CancellationToken cancellationToken)
+        private async void WorkerProcessManager(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -262,8 +262,15 @@ namespace MondBot
                     _workers.RemoveAll(w => w != null && w.IsDead);
                 }
 
-                // don't go under minimum
-                if (_workers.Count <= MinWorkerProcesses)
+                // automatically start when under minimum
+                if (_workers.Count < MinWorkerProcesses)
+                {
+                    Spawn();
+                    continue;
+                }
+
+                // don't kill at minimum worker count
+                if (_workers.Count == MinWorkerProcesses)
                     continue;
 
                 // if we had recent activity, dont kill any

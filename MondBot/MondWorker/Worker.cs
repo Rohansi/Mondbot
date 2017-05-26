@@ -14,10 +14,7 @@ namespace MondBot
 
         private bool _isNew;
 
-        public bool IsDead
-        {
-            get { return Process == null || Process.HasExited; }
-        }
+        public bool IsDead => Process == null || Process.HasExited;
 
         public Worker(Process process, TcpClient socket)
         {
@@ -67,7 +64,7 @@ namespace MondBot
             await sendStream.WriteStringAsync(username);
             await sendStream.WriteStringAsync(source);
 
-            var timeout = _isNew ? 18 : 15;
+            var timeout = _isNew ? 11 : 10;
             _isNew = false;
 
             // wait for output or timeout

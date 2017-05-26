@@ -7,6 +7,11 @@ namespace MondBot
     {
         private static readonly WorkerManager WorkerManager = new WorkerManager();
 
+        public static void Initialize()
+        {
+            // force the static constructor to run
+        }
+
         public static async Task<RunResult> Run(string username, string source)
         {
             if (string.IsNullOrWhiteSpace(source))

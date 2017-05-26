@@ -13,6 +13,8 @@ namespace MondBot
 
         public static void Main(string[] args)
         {
+            RunModule.Initialize();
+
             var telegramThread = new Thread(RunTelegramBot);
             telegramThread.Start();
 
