@@ -5,25 +5,8 @@ using Mond;
 using Mond.Binding;
 using Mond.Libraries;
 
-namespace MondHost
+namespace MondHost.Libraries
 {
-    class HttpLibraries : IMondLibraryCollection
-    {
-        public IEnumerable<IMondLibrary> Create(MondState state)
-        {
-            yield return new HttpLibrary();
-        }
-    }
-
-    class HttpLibrary : IMondLibrary
-    {
-        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
-        {
-            var httpModule = MondModuleBinder.Bind(typeof(HttpModule));
-            yield return new KeyValuePair<string, MondValue>("Http", httpModule);
-        }
-    }
-
     [MondModule("Http")]
     static class HttpModule
     {
@@ -39,6 +22,23 @@ namespace MondHost
             client.Headers.Add("User-Agent", "Mondbox");
 
             return client.DownloadString(address);
+        }
+    }
+
+    class HttpLibraries : IMondLibraryCollection
+    {
+        public IEnumerable<IMondLibrary> Create(MondState state)
+        {
+            yield return new HttpLibrary();
+        }
+    }
+
+    class HttpLibrary : IMondLibrary
+    {
+        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
+        {
+            var httpModule = MondModuleBinder.Bind(typeof(HttpModule));
+            yield return new KeyValuePair<string, MondValue>("Http", httpModule);
         }
     }
 }

@@ -7,6 +7,7 @@ using Mond;
 using Mond.Libraries;
 using MondBot;
 using Npgsql;
+using MondHost.Libraries;
 
 namespace MondHost
 {

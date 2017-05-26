@@ -84,7 +84,7 @@ namespace MondBot
         {
             var embed = new DiscordEmbed
             {
-                Description = "I run [Mond](https://github.com/Rohansi/Mond) code for you! My source code can be found on [BitBucket](https://bitbucket.org/rohans/mondbot).",
+                Description = "I run [Mond](https://github.com/Rohansi/Mond) code for you! My source code can be found on [BitBucket](https://bitbucket.org/rohans/mondbot/src/master/MondHost/Libraries/).",
                 Thumbnail = new DiscordEmbedThumbnail { Url = "http://i.imgur.com/zbqVSaz.png" },
                 Fields = new List<DiscordEmbedField>
                 {
@@ -108,19 +108,27 @@ namespace MondBot
         {
             var (image, output) = await Common.RunScript(username, arguments);
 
+            var description = "Finished with no output.";
+            if (!string.IsNullOrWhiteSpace(output))
+                description = CodeBlock(output);
+            else if (image != null)
+                description = "";
+
+            var embed = new DiscordEmbed
+            {
+                Description = description
+            };
+
             if (image != null)
             {
-                output = string.IsNullOrWhiteSpace(output) ? "" : CodeBlock(output);
+                embed.Image = new DiscordEmbedImage { Url = "attachment://photo.png" };
 
                 var stream = new MemoryStream(image);
-                await from.SendFileAsync(stream, "photo.png", output);
+                await from.SendFileAsync(stream, "photo.png", "", embed: embed);
                 return; // image with output!
             }
 
-            if (!string.IsNullOrWhiteSpace(output))
-                await SendMessage(from, output, true);
-            else
-                await SendMessage(from, "Finished with no output.");
+            await from.SendMessageAsync("", embed: embed);
         }
 
         private async Task DoMethod(DiscordChannel from, string username, string arguments)
@@ -131,15 +139,20 @@ namespace MondBot
 
         private async Task DoView(DiscordChannel from, string username, string arguments)
         {
-            var data = await Common.ViewVariable(arguments.Trim());
+            var name = arguments.Trim();
+            var data = await Common.ViewVariable(name);
 
             if (data == null)
             {
-                await SendMessage(from, "Variable doesn't exist!");
+                await SendMessage(from, $"Variable '{name}' doesn't exist!");
                 return;
             }
 
-            await SendMessage(from, data, true);
+            await from.SendMessageAsync("", embed: new DiscordEmbed
+            {
+                Title = $"Variable: {name}",
+                Description = CodeBlock(data)
+            });
         }
 
         private static async Task SendMessage(DiscordChannel to, string text, bool isCode = false)

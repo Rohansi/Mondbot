@@ -5,7 +5,7 @@ using Mond.Binding;
 using Mond.Libraries;
 using Rant;
 
-namespace MondHost
+namespace MondHost.Libraries
 {
     class RantLibraries : IMondLibraryCollection
     {
