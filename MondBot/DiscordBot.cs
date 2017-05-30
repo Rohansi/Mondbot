@@ -20,12 +20,21 @@ namespace MondBot
             {
                 { "h", DoHelp },
                 { "help", DoHelp },
+
                 { "r", DoRun },
                 { "run", DoRun },
+
+                { "f", DoMethod },
+                { "fun", DoMethod },
+                { "func", DoMethod },
+                { "function", DoMethod },
+
+                { "v", DoView },
+                { "view", DoView },
+
+                // backwards compat
                 { "m", DoMethod },
                 { "method", DoMethod },
-                { "v", DoView },
-                { "view", DoView }
             };
 
             var config = new DiscordConfig()
@@ -39,7 +48,7 @@ namespace MondBot
             };
 
             _bot = new DiscordClient(config);
-            _bot.SetSocketImplementation<WebSocketSharpClient>();
+            _bot.SetWebSocketClient<WebSocketSharpClient>();
 
             _bot.DebugLogger.LogMessageReceived += (o, e) =>
                 Console.WriteLine($"[{e.Timestamp}] [{e.Application}] [{e.Level}] {e.Message}");
@@ -84,19 +93,19 @@ namespace MondBot
         {
             var embed = new DiscordEmbed
             {
-                Description = "I run [Mond](https://github.com/Rohansi/Mond) code for you! My source code can be found on [BitBucket](https://bitbucket.org/rohans/mondbot/src/master/MondHost/Libraries/).",
+                Description = "I run [Mond](https://github.com/Rohansi/Mond) code for you! My source code can be found on [BitBucket](https://bitbucket.org/rohans/mondbot/src/master/MondHost/).",
                 Thumbnail = new DiscordEmbedThumbnail { Url = "http://i.imgur.com/zbqVSaz.png" },
                 Fields = new List<DiscordEmbedField>
                 {
                     new DiscordEmbedField
                     {
                         Name = "Commands",
-                        Value = "+run <code>\n+method <name> <code>\n+view <name>"
+                        Value = "`+run <code>` - run a script\n\n`+func <name> <code>` - save a function to the database, must include signature but no name\n\n`+view <name>` - view the value of a variable or function\n\nThese can also be shortened to single letters, for example `+r` is the same as `+run`."
                     },
                     new DiscordEmbedField
                     {
                         Name = "Documentation",
-                        Value = "[Language](https://github.com/Rohansi/Mond/wiki)\n[MondBot extras](https://bitbucket.org/rohans/mondbot/src/master/MondHost/?at=master) (files with Library in the name)"
+                        Value = "[Language](https://github.com/Rohansi/Mond/wiki)\n[MondBot extras](https://bitbucket.org/rohans/mondbot/src/master/MondHost/Libraries/)"
                     }
                 }
             };
@@ -114,21 +123,14 @@ namespace MondBot
             else if (image != null)
                 description = "";
 
-            var embed = new DiscordEmbed
-            {
-                Description = description
-            };
-
             if (image != null)
             {
-                embed.Image = new DiscordEmbedImage { Url = "attachment://photo.png" };
-
                 var stream = new MemoryStream(image);
-                await from.SendFileAsync(stream, "photo.png", "", embed: embed);
+                await from.SendFileAsync(stream, "photo.png", description);
                 return; // image with output!
             }
 
-            await from.SendMessageAsync("", embed: embed);
+            await SendMessage(from, description);
         }
 
         private async Task DoMethod(DiscordChannel from, string username, string arguments)
@@ -144,15 +146,11 @@ namespace MondBot
 
             if (data == null)
             {
-                await SendMessage(from, $"Variable '{name}' doesn't exist!");
+                await SendMessage(from, $"Variable {CodeField(name)} doesn't exist!");
                 return;
             }
 
-            await from.SendMessageAsync("", embed: new DiscordEmbed
-            {
-                Title = $"Variable: {name}",
-                Description = CodeBlock(data)
-            });
+            await SendMessage(from, $"**Variable: {CodeField(name)}**\n{CodeBlock(data)}");
         }
 
         private static async Task SendMessage(DiscordChannel to, string text, bool isCode = false)
@@ -167,8 +165,8 @@ namespace MondBot
             }
         }
 
-        private static string CodeBlock(string text) =>
-            "```\n" + text.Replace("`", "\\`") + "\n```";
+        private static string CodeField(string text) => "`" + text.Replace('`', '´') + "`";
+        private static string CodeBlock(string text) => "```\n" + text.Replace("```", "´´´") + "\n```";
 
         private static readonly Regex CommandRegex = new Regex(@"^\+([a-z]+) ?(.*)?$", RegexOptions.Singleline);
         private static bool TryParseCommand(string text, out string command, out string arguments)

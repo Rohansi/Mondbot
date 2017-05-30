@@ -235,8 +235,18 @@ namespace MondHost.Libraries
         private static Bitmap _bitmap;
         private static Graphics _graphics;
 
-        private static Bitmap Bitmap => _bitmap ?? (_bitmap = new Bitmap(BitmapWidth, BitmapHeight));
-        private static Graphics Graphics => _graphics ?? (_graphics = Graphics.FromImage(Bitmap));
+        private static Graphics Graphics => _graphics ?? (_graphics = CreateGraphics());
+
+        private static Graphics CreateGraphics()
+        {
+            if (_bitmap != null || _graphics != null)
+                throw new InvalidOperationException("Image state was not reset.");
+
+            _bitmap = new Bitmap(BitmapWidth, BitmapHeight);
+            var graphics = Graphics.FromImage(_bitmap);
+            graphics.Clear(Color.White);
+            return graphics;
+        }
 
         public static byte[] GetImageData()
         {
