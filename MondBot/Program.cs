@@ -18,6 +18,7 @@ namespace MondBot
             var telegramThread = new Thread(RunTelegramBot);
             telegramThread.Start();
 
+            using (var rohbot = new RohBotBot())
             using (var discord = new DiscordBot())
             {
                 discord.Start().Wait();

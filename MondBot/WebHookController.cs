@@ -2,8 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -15,42 +13,9 @@ namespace MondBot
 {
     public class WebHookController : ApiController
     {
+        private const string Service = "telegram";
+
         private static TelegramBotClient Bot => Program.TelegramBot;
-
-        public async Task<HttpResponseMessage> Get(string type)
-        {
-            const string imageTest = @"
-const red = Color(255, 0, 0);
-const green = Color(0, 255, 0);
-const blue = Color(0, 0, 255);
-const black = Color(0, 0, 0);
-const white = Color(255, 255, 255);
-
-Image.clear(black);
-Image.drawRectangle(20, 20, Image.getWidth() - 40, Image.getHeight() - 40, red, 10);
-Image.drawString(""Hello, world!"", 100, 100, white);
-Image.fillEllipse(100, 200, 75, 100, blue);
-Image.drawLine(125, 290, 100, 400, white, 5);
-
-return Json.serialize(green);";
-
-            const string rantTest = @"return Rant.run(""<verb> me pls"");";
-
-            var result = await RunModule.Run("Rohansi", rantTest);
-
-            var response = new HttpResponseMessage(HttpStatusCode.OK);
-            if (type == "image")
-            {
-                response.Content = new ByteArrayContent(result.Image);
-                response.Content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-            }
-            else
-            {
-                response.Content = new StringContent(result.Output);
-                response.Content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
-            }
-            return response;
-        }
 
         public async Task<IHttpActionResult> Post(Update update)
         {
@@ -85,7 +50,7 @@ return Json.serialize(green);";
             if (await HandleCommands(message))
                 return;
 
-            if (message.Type != MessageType.PhotoMessage)
+            /*if (message.Type != MessageType.PhotoMessage)
             {
                 await Bot.SendTextMessageAsync(message.Chat.Id, "send pics plz");
                 return;
@@ -113,7 +78,7 @@ return Json.serialize(green);";
                 await cmd.ExecuteNonQuery();
             }
 
-            await Bot.SendTextMessageAsync(message.Chat.Id, "thanks");
+            await Bot.SendTextMessageAsync(message.Chat.Id, "thanks");*/
         }
 
         private static async Task OnGroupMessageHandler(Message message)
@@ -141,13 +106,13 @@ return Json.serialize(green);";
                     await Bot.SendTextMessageAsync(message.Chat.Id, "NO HELP");
                     break;
 
-                case "boop":
+                /*case "boop":
                     await SendRandomPhoto(message.Chat.Id);
                     break;
 
                 case "count":
                     await SendPhotoCount(message.Chat.Id);
-                    break;
+                    break;*/
 
                 case "run":
                     await RunMondScript(message, remainingText);
@@ -168,7 +133,7 @@ return Json.serialize(green);";
             return true;
         }
 
-        private static async Task SendRandomPhoto(long chatId)
+        /*private static async Task SendRandomPhoto(long chatId)
         {
             var cmd =
                 new SqlCommand(
@@ -223,11 +188,11 @@ return Json.serialize(green);";
                 var result = (long)await cmd.ExecuteScalar();
                 await Bot.SendTextMessageAsync(chatId, $"There are {result} pictures in my database.");
             }
-        }
+        }*/
 
         private static async Task RunMondScript(Message message, string code)
         {
-            var (image, result) = await Common.RunScript(message.GetUsername(), code);
+            var (image, result) = await Common.RunScript(Service, message.From.Id.ToString("G"), message.GetUsername(), code);
 
             if (image != null)
             {
@@ -248,7 +213,7 @@ return Json.serialize(green);";
 
         private static async Task AddMondMethod(Message message, string parameters)
         {
-            var (result, isCode) = await Common.AddMethod(message.GetUsername(), parameters);
+            var (result, isCode) = await Common.AddMethod(Service, message.From.Id.ToString("G"), message.GetUsername(), parameters);
             await SendMessage(message, result, isCode);
         }
 

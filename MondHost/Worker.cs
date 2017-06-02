@@ -23,6 +23,9 @@ namespace MondHost
 
         private MondState _state;
         private Dictionary<string, MondValue> _variableCache;
+
+        private MondValue _service;
+        private MondValue _userid;
         private MondValue _username;
 
         public Worker()
@@ -30,7 +33,7 @@ namespace MondHost
             _outputBuffer = new StringBuilder(MaxOutputChars);
         }
 
-        public RunResult Run(string username, string source)
+        public RunResult Run(string service, string userid, string username, string source)
         {
             _outputBuffer.Clear();
 
@@ -42,6 +45,8 @@ namespace MondHost
                 {
                     _transaction = _connection.BeginTransaction();
 
+                    _service = service;
+                    _userid = userid;
                     _username = username;
 
                     _state = new MondState
@@ -59,6 +64,7 @@ namespace MondHost
                             new HttpLibraries(),
                             new ImageLibraries(),
                             new RantLibraries(),
+                            new RegexLibraries(),
                         }
                     };
 
@@ -76,7 +82,6 @@ namespace MondHost
                     var variableSetter = new MondValue(VariableSetter);
 
                     _state["__ops"]["__get"] = variableGetter;
-                    _state["__ops"]["__set"] = variableSetter;
                     _state["__get"] = variableGetter;
                     _state["__set"] = variableSetter;
 
@@ -142,10 +147,9 @@ namespace MondHost
 
             var name = (string)args[1];
 
-            if (name == "username")
-                return _username;
-
-            MondValue value;
+            if (TryGetBuiltin(name, out var value))
+                return value;
+            
             if (_variableCache.TryGetValue(name, out value))
                 return value;
 
@@ -163,22 +167,38 @@ namespace MondHost
                 throw new MondRuntimeException("VariableObject.__set: requires 3 parameters");
 
             var name = (string)args[1];
-            if (name == "username")
-                return _username;
+
+            if (TryGetBuiltin(name, out var value))
+                return value;
             
-            var value = args[2];
+            value = args[2];
 
             StoreVariable(name, value);
             _variableCache[name] = value;
             return value;
         }
 
+        private bool TryGetBuiltin(string name, out MondValue value)
+        {
+            value = null;
+
+            if (name == "service")
+                value = _service;
+            else if (name == "userid")
+                value = _userid;
+            else if (name == "username")
+                value =  _username;
+
+            return value != null;
+        }
+
         private MondValue LoadVariable(string name)
         {
             VariableType type;
             string data;
+            int version;
 
-            var cmd = new SqlCommand(_connection, _transaction, @"SELECT type, data FROM mondbot.variables WHERE name = :name FOR UPDATE;")
+            var cmd = new SqlCommand(_connection, _transaction, @"SELECT type, data, version FROM mondbot.variables WHERE name = :name FOR UPDATE;")
             {
                 ["name"] = name
             };
@@ -191,6 +211,7 @@ namespace MondHost
 
                 type = (VariableType)(short)result.type;
                 data = (string)result.data;
+                version = (int)result.version;
             }
 
             switch (type)
@@ -199,8 +220,26 @@ namespace MondHost
                     return _state.Call(_state["Json"]["deserialize"], data);
                 
                 case VariableType.Method:
-                    var code = "return " + data + ";";
-                    return _state.Run(code, name + ".mnd");
+                    if (version == 1)
+                    {
+                        var code = "return " + data + ";";
+                        return _state.Run(code, name + ".mnd");
+                    }
+                    else if (version == 2)
+                    {
+                        var code = data;
+
+                        if (char.IsLetterOrDigit(name[0]) || name[0] == '_')
+                            code += $"\n;return {name};";
+                        else
+                            code += $"\n;return global.__ops[\"{name}\"];";
+
+                        return _state.Run(code, name + ".mnd");
+                    }
+                    else
+                    {
+                        throw new NotSupportedException("Method Version");
+                    }
 
                 default:
                     throw new MondRuntimeException($"Unhandled VariableType {type}");
@@ -211,8 +250,8 @@ namespace MondHost
         {
             var data = (string)_state.Call(_state["Json"]["serialize"], value);
 
-            var cmd = new SqlCommand(_connection, _transaction, @"INSERT INTO mondbot.variables (name, type, data) VALUES (:name, :type, :data)
-                                                                  ON CONFLICT (name) DO UPDATE SET type = :type, data = :data;")
+            var cmd = new SqlCommand(_connection, _transaction, @"INSERT INTO mondbot.variables (name, type, data, version) VALUES (:name, :type, :data, 2)
+                                                                  ON CONFLICT (name) DO UPDATE SET type = :type, data = :data, version = 2;")
             {
                 ["name"] = name,
                 ["type"] = (int)VariableType.Serialized,

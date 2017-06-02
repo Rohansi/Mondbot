@@ -26,6 +26,12 @@ namespace MondBot
         public string DiscordToken { get; set; }
 
         [JsonProperty(Required = Required.Always)]
+        public string RohBotUsername { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public string RohBotPassword { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
         public string DbAddress { get; set; }
 
         [JsonProperty(Required = Required.Always)]

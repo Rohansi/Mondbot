@@ -10,10 +10,20 @@ namespace MondBot
         public static void Initialize()
         {
             // force the static constructor to run
+            Console.WriteLine(WorkerManager.ToString());
         }
 
-        public static async Task<RunResult> Run(string username, string source)
+        public static async Task<RunResult> Run(string service, string userid, string username, string source)
         {
+            if (string.IsNullOrWhiteSpace(service))
+                throw new ArgumentNullException(nameof(service));
+
+            if (string.IsNullOrWhiteSpace(userid))
+                throw new ArgumentNullException(nameof(userid));
+
+            if (string.IsNullOrWhiteSpace(username))
+                throw new ArgumentNullException(nameof(username));
+
             if (string.IsNullOrWhiteSpace(source))
                 return null;
 
@@ -28,7 +38,7 @@ namespace MondBot
                 try
                 {
                     // make it do work
-                    var result = await worker.Run(username, source).ConfigureAwait(false);
+                    var result = await worker.Run(service, userid, username, source).ConfigureAwait(false);
 
                     // reuse the worker
                     WorkerManager.Enqueue(worker);

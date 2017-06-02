@@ -6,14 +6,14 @@ namespace MondBot
 {
     internal static class Common
     {
-        public static async Task<(byte[] image, string result)> RunScript(string username, string code)
+        public static async Task<(byte[] image, string result)> RunScript(string service, string userid, string username, string code)
         {
             code = CleanupCode(code);
 
             if (string.IsNullOrWhiteSpace(code))
                 return (null, null);
 
-            var result = await RunModule.Run(username, code + ";");
+            var result = await RunModule.Run(service, userid, username, code + ";");
 
             var image = result.Image;
             if (result.Image != null && result.Image.Length == 0)
@@ -22,26 +22,38 @@ namespace MondBot
             return (image, result.Output);
         }
 
-        private static readonly Regex AddCommandRegex = new Regex(@"^\s*(\w+|[\.\=\+\-\*\/\%\&\|\^\~\<\>\!\?]+)\s+(.+)$", RegexOptions.Singleline);
-        public static async Task<(string result, bool isCode)> AddMethod(string username, string parameters)
+        //private static readonly Regex AddCommandRegex = new Regex(@"^\s*(\w+|[\.\=\+\-\*\/\%\&\|\^\~\<\>\!\?\@\#\$\\]+)\s+(.+)$", RegexOptions.Singleline);
+
+        private static readonly Regex AddCommandRegex = new Regex(
+            @"(?:^(?:\@[\w\.]+(?:\((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!))\))?\s+)+|^)(?:fun|seq)\s+(?:(?<name>\w+)|\((?<name>[\.\=\+\-\*\/\%\&\|\^\~\<\>\!\?\@\#\$\\]+)\))\s*\(",
+            RegexOptions.Singleline);
+
+        public static async Task<(string result, bool isCode)> AddMethod(string service, string userid, string username, string arguments)
         {
-            var match = AddCommandRegex.Match(parameters);
+            var code = CleanupCode(arguments);
+
+            var match = AddCommandRegex.Match(code);
             if (!match.Success)
-                return ("Usage: /method <name> <code>", false);
+                return ("Usage: /method <named function>", false);
 
-            var name = match.Groups[1].Value;
-            var code = CleanupCode(match.Groups[2].Value);
+            var name = match.Groups["name"].Value;
 
-            var result = (await RunModule.Run(username, $"print({code});")).Output;
+            var testCode = code;
+            if (char.IsLetterOrDigit(name[0]) || name[0] == '_')
+                testCode += $"\n;return {name};";
+            else
+                testCode += $"\n;return global.__ops[\"{name}\"];";
+            
+            var result = (await RunModule.Run(service, userid, username, testCode)).Output.Trim();
 
             if (result.StartsWith("ERROR:") || result.StartsWith("EXCEPTION:") || result.StartsWith("mondbox"))
                 return (result, true);
 
-            if (result != "function")
-                return ("Method code must actually be a method!", false);
+            if (!result.EndsWith("function"))
+                return ("Code must evaluate to a method!", false);
 
-            var cmd = new SqlCommand(@"INSERT INTO mondbot.variables (name, type, data) VALUES (:name, :type, :data)
-                                       ON CONFLICT (name) DO UPDATE SET type = :type, data = :data;")
+            var cmd = new SqlCommand(@"INSERT INTO mondbot.variables (name, type, data, version) VALUES (:name, :type, :data, 2)
+                                       ON CONFLICT (name) DO UPDATE SET type = :type, data = :data, version = 2;")
             {
                 ["name"] = name,
                 ["type"] = (int)VariableType.Method,
@@ -76,7 +88,7 @@ namespace MondBot
 
         private static string CleanupCode(string code)
         {
-            return code.Trim().Trim('`');
+            return code.Trim().Trim('`').Trim();
         }
     }
 }

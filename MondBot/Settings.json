@@ -1,5 +1,11 @@
 ﻿{
-    "Token": "<your bot token>",
+    "Token": "<your Telegram bot token>",
+
+	"DiscordToken":  "<your Discord bot token>",
+
+	"RohBotUsername": "<your RohBot username>",
+	"RohBotPassword":  "<your RohBot password>",
+
     "DbAddress": "127.0.0.1",
     "DbPort": 5432,
     "DbName": "mondbotdb",

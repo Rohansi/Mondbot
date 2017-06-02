@@ -4,24 +4,57 @@ using System.Net;
 using Mond;
 using Mond.Binding;
 using Mond.Libraries;
+using System.Net.Http;
 
 namespace MondHost.Libraries
 {
     [MondModule("Http")]
     static class HttpModule
     {
+        [MondFunction("htmlEncode")]
+        public static string HtmlEncode(string value) => WebUtility.HtmlEncode(value);
+
+        [MondFunction("htmlDecode")]
+        public static string HtmlDecode(string value) => WebUtility.HtmlDecode(value);
+
+        [MondFunction("urlEncode")]
+        public static string UrlEncode(string value) => WebUtility.UrlEncode(value);
+
+        [MondFunction("urlDecode")]
+        public static string UrlDecode(string value) => WebUtility.UrlDecode(value);
+
         [MondFunction("get")]
-        public static MondValue Get(string address)
+        public static string Get(string address)
         {
-            var uri = new Uri(address);
+            var uri = GetUri(address);
+            var client = GetHttpClient();
+
+            return client.GetStringAsync(uri).Result;
+        }
+
+        private static Uri GetUri(string uriString)
+        {
+            var uri = new Uri(uriString);
 
             if (uri.Scheme != "http" && uri.Scheme != "https")
-                throw new MondRuntimeException("Http.get: {0} protocol not supported", uri.Scheme);
+                throw new MondRuntimeException("Http: {0} protocol not supported", uri.Scheme);
 
-            var client = new WebClient();
-            client.Headers.Add("User-Agent", "Mondbox");
+            return uri;
+        }
 
-            return client.DownloadString(address);
+        private static HttpClient GetHttpClient()
+        {
+            var client = new HttpClient(new HttpClientHandler
+            {
+                AllowAutoRedirect = true,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                ClientCertificateOptions = ClientCertificateOption.Automatic,
+                MaxAutomaticRedirections = 3
+            });
+
+            client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "MondBot");
+
+            return client;
         }
     }
 

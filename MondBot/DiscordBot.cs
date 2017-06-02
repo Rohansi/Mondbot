@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DSharpPlus;
 
@@ -9,17 +8,20 @@ namespace MondBot
 {
     internal class DiscordBot : IDisposable
     {
-        private delegate Task CommandHandler(DiscordChannel from, string username, string arguments);
+        private const string Service = "discord";
 
-        private readonly Dictionary<string, CommandHandler> _commandHandlers;
+        private readonly CommandDispatcher<DiscordChannel> _commandDispatcher;
         private readonly DiscordClient _bot;
 
         public DiscordBot()
         {
-            _commandHandlers = new Dictionary<string, CommandHandler>
+            _commandDispatcher = new CommandDispatcher<DiscordChannel>
             {
                 { "h", DoHelp },
                 { "help", DoHelp },
+
+                { "i", DoInfo },
+                { "info", DoInfo },
 
                 { "r", DoRun },
                 { "run", DoRun },
@@ -37,7 +39,7 @@ namespace MondBot
                 { "method", DoMethod },
             };
 
-            var config = new DiscordConfig()
+            var config = new DiscordConfig
             {
                 AutoReconnect = true,
                 DiscordBranch = Branch.Stable,
@@ -58,15 +60,9 @@ namespace MondBot
             _bot.MessageCreated += MessageReceived;
         }
 
-        public void Dispose()
-        {
-            _bot.Dispose();
-        }
+        public void Dispose() => _bot.Dispose();
 
-        public async Task Start()
-        {
-            await _bot.ConnectAsync();
-        }
+        public Task Start() => _bot.ConnectAsync();
 
         private async Task MessageReceived(MessageCreateEventArgs args)
         {
@@ -75,13 +71,10 @@ namespace MondBot
                 if (args.Author.IsBot)
                     return;
 
-                if (!TryParseCommand(args.Message.Content, out var command, out var arguments))
-                    return;
-
-                if (!_commandHandlers.TryGetValue(command, out var handler))
-                    return;
-
-                await handler(args.Channel, args.Author.Username, arguments);
+                await _commandDispatcher.Dispatch("+", args.Channel,
+                    args.Author.Id.ToString("G"),
+                    args.Author.Username,
+                    args.Message.Content);
             }
             catch (Exception e)
             {
@@ -89,18 +82,18 @@ namespace MondBot
             }
         }
 
-        private async Task DoHelp(DiscordChannel from, string username, string arguments)
+        private async Task DoHelp(DiscordChannel from, string userid, string username, string arguments)
         {
             var embed = new DiscordEmbed
             {
-                Description = "I run [Mond](https://github.com/Rohansi/Mond) code for you! My source code can be found on [BitBucket](https://bitbucket.org/rohans/mondbot/src/master/MondHost/).",
+                Description = "I run [Mond](https://github.com/Rohansi/Mond) code for you!",
                 Thumbnail = new DiscordEmbedThumbnail { Url = "http://i.imgur.com/zbqVSaz.png" },
                 Fields = new List<DiscordEmbedField>
                 {
                     new DiscordEmbedField
                     {
                         Name = "Commands",
-                        Value = "`+run <code>` - run a script\n\n`+func <name> <code>` - save a function to the database, must include signature but no name\n\n`+view <name>` - view the value of a variable or function\n\nThese can also be shortened to single letters, for example `+r` is the same as `+run`."
+                        Value = "`+run <code>` - run a script\n\n`+func <named fun/seq>` - save a function to the database\n\n`+view <name>` - view the value of a variable or function\n\nThese can also be shortened to single letters, for example `+r` is the same as `+run`."
                     },
                     new DiscordEmbedField
                     {
@@ -113,9 +106,40 @@ namespace MondBot
             await from.SendMessageAsync("", embed: embed);
         }
 
-        private async Task DoRun(DiscordChannel from, string username, string arguments)
+        private async Task DoInfo(DiscordChannel from, string userid, string username, string arguments)
         {
-            var (image, output) = await Common.RunScript(username, arguments);
+            var embed = new DiscordEmbed
+            {
+                Thumbnail = new DiscordEmbedThumbnail { Url = "http://i.imgur.com/zbqVSaz.png" },
+                Fields = new List<DiscordEmbedField>
+                {
+                    new DiscordEmbedField
+                    {
+                        Name = "Creator",
+                        Value = "Rohan#2847"
+                    },
+                    new DiscordEmbedField
+                    {
+                        Name = "Source Code",
+                        Value = "[BitBucket](https://bitbucket.org/rohans/mondbot/)"
+                    },
+                    new DiscordEmbedField
+                    {
+                        Name = "Library",
+                        Value = "[DSharpPlus](https://github.com/NaamloosDT/DSharpPlus/)"
+                    }
+                }
+            };
+
+            await from.SendMessageAsync("", embed: embed);
+        }
+
+        private async Task DoRun(DiscordChannel from, string userid, string username, string arguments)
+        {
+            if (string.IsNullOrWhiteSpace(arguments))
+                return;
+
+            var (image, output) = await Common.RunScript(Service, userid, username, arguments);
 
             var description = "Finished with no output.";
             if (!string.IsNullOrWhiteSpace(output))
@@ -133,13 +157,13 @@ namespace MondBot
             await SendMessage(from, description);
         }
 
-        private async Task DoMethod(DiscordChannel from, string username, string arguments)
+        private async Task DoMethod(DiscordChannel from, string userid, string username, string arguments)
         {
-            var (result, isCode) = await Common.AddMethod(username, arguments);
+            var (result, isCode) = await Common.AddMethod(Service, userid, username, arguments);
             await SendMessage(from, result, isCode);
         }
 
-        private async Task DoView(DiscordChannel from, string username, string arguments)
+        private async Task DoView(DiscordChannel from, string userid, string username, string arguments)
         {
             var name = arguments.Trim();
             var data = await Common.ViewVariable(name);
@@ -167,27 +191,5 @@ namespace MondBot
 
         private static string CodeField(string text) => "`" + text.Replace('`', '´') + "`";
         private static string CodeBlock(string text) => "```\n" + text.Replace("```", "´´´") + "\n```";
-
-        private static readonly Regex CommandRegex = new Regex(@"^\+([a-z]+) ?(.*)?$", RegexOptions.Singleline);
-        private static bool TryParseCommand(string text, out string command, out string arguments)
-        {
-            command = null;
-            arguments = null;
-
-            if (string.IsNullOrWhiteSpace(text))
-                return false;
-
-            if (!text.StartsWith("+"))
-                return false;
-
-            var match = CommandRegex.Match(text);
-
-            if (!match.Success)
-                return false;
-
-            command = match.Groups[1].Value;
-            arguments = match.Groups[2].Value;
-            return true;
-        }
     }
 }
