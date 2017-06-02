@@ -107,7 +107,7 @@ namespace MondHost
                 if (ctorName.Type == MondValueType.String)
                 {
                     var ctor = _state[ctorName];
-                    if (ctor.Type == MondValueType.Function)
+                    if (ctor.Type == MondValueType.Function || (ctor.Type == MondValueType.Object && (bool)ctor["__call"]))
                     {
                         var ctorArgs = obj["$args"];
                         var args = ctorArgs.Type == MondValueType.Array ? ctorArgs.Array : new MondValue[0];
