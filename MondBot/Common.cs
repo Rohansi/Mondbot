@@ -49,9 +49,6 @@ namespace MondBot
             if (result.StartsWith("ERROR:") || result.StartsWith("EXCEPTION:") || result.StartsWith("mondbox"))
                 return (result, true);
 
-            if (!result.EndsWith("function"))
-                return ("Code must evaluate to a method!", false);
-
             var cmd = new SqlCommand(@"INSERT INTO mondbot.variables (name, type, data, version) VALUES (:name, :type, :data, 2)
                                        ON CONFLICT (name) DO UPDATE SET type = :type, data = :data, version = 2;")
             {

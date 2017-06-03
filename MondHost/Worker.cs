@@ -23,6 +23,7 @@ namespace MondHost
 
         private MondState _state;
         private Dictionary<string, MondValue> _variableCache;
+        private HashSet<string> _loadingVariables;
 
         private MondValue _service;
         private MondValue _userid;
@@ -76,7 +77,11 @@ namespace MondHost
 
                     _state.EnsureLibrariesLoaded();
 
+                    var global = _state.Run("return global;");
+                    global.Prototype = MondValue.Null;
+
                     _variableCache = new Dictionary<string, MondValue>();
+                    _loadingVariables = new HashSet<string>();
 
                     var variableGetter = new MondValue(VariableGetter);
                     var variableSetter = new MondValue(VariableSetter);
@@ -98,8 +103,8 @@ namespace MondHost
 
                         if (result["moveNext"])
                         {
-                            output.WriteLine("sequence (100 max):");
-                            foreach (var i in result.Enumerate(_state).Take(100))
+                            output.WriteLine("sequence (20 max):");
+                            foreach (var i in result.Enumerate(_state).Take(20))
                             {
                                 output.WriteLine(i.Serialize());
                             }
@@ -153,12 +158,22 @@ namespace MondHost
             if (_variableCache.TryGetValue(name, out value))
                 return value;
 
-            value = LoadVariable(name);
-            if (value == null)
-                throw new MondRuntimeException($"Undefined variable '{name}'");
+            if (!_loadingVariables.Add(name))
+                throw new MondRuntimeException($"Variable '{name}' could not finish loading due to a circular dependency");
 
-            _variableCache.Add(name, value);
-            return value;
+            try
+            {
+                value = LoadVariable(name);
+                if (value == null)
+                    throw new MondRuntimeException($"Undefined variable '{name}'");
+
+                _variableCache.Add(name, value);
+                return value;
+            }
+            finally
+            {
+                _loadingVariables.Remove(name);
+            }
         }
 
         private MondValue VariableSetter(MondState state, params MondValue[] args)
