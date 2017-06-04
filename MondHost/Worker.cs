@@ -100,7 +100,6 @@ namespace MondHost
                     if (result != MondValue.Undefined)
                     {
                         output.WriteLine();
-                        output.WriteLine("=================");
 
                         if (result["moveNext"])
                         {

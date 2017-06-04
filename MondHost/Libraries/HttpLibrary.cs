@@ -49,6 +49,20 @@ namespace MondHost.Libraries
             return response.Content.ReadAsStringAsync().Result;
         }
 
+        [MondFunction("postJson")]
+        public static string PostJson(MondState state, string address, MondValue obj)
+        {
+            if (obj == null || obj.Type != MondValueType.Object)
+                throw new MondRuntimeException("Http.postJson: obj must be an object");
+
+            var uri = GetUri(address);
+            var client = GetHttpClient();
+
+            var data = JsonModule.Serialize(state, obj);
+            var response = client.PostAsync(uri, new StringContent(data)).Result;
+            return response.Content.ReadAsStringAsync().Result;
+        }
+
         private static Uri GetUri(string uriString)
         {
             var uri = new Uri(uriString);
