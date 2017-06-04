@@ -79,15 +79,19 @@ namespace MondHost.Libraries
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new HttpLibrary();
+            yield return new HttpLibrary(state);
         }
     }
 
     class HttpLibrary : IMondLibrary
     {
+        private readonly MondState _state;
+
+        public HttpLibrary(MondState state) => _state = state;
+
         public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
         {
-            var httpModule = MondModuleBinder.Bind(typeof(HttpModule));
+            var httpModule = MondModuleBinder.Bind(typeof(HttpModule), _state);
             yield return new KeyValuePair<string, MondValue>("Http", httpModule);
         }
     }

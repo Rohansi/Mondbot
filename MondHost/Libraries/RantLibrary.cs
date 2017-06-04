@@ -11,15 +11,19 @@ namespace MondHost.Libraries
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new RantLibrary();
+            yield return new RantLibrary(state);
         }
     }
 
     class RantLibrary : IMondLibrary
     {
+        private readonly MondState _state;
+
+        public RantLibrary(MondState state) => _state = state;
+
         public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
         {
-            var rantModule = MondModuleBinder.Bind(typeof(RantModule));
+            var rantModule = MondModuleBinder.Bind(typeof(RantModule), _state);
             yield return new KeyValuePair<string, MondValue>("Rant", rantModule);
         }
     }

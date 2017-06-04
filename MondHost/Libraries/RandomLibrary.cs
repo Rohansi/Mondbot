@@ -33,9 +33,9 @@ namespace MondHost.Libraries
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new ErrorLibrary();
-            yield return new CharLibrary();
-            yield return new MathLibrary();
+            yield return new ErrorLibrary(state);
+            yield return new CharLibrary(state);
+            yield return new MathLibrary(state);
             yield return new BetterRandomLibrary(state);
         }
     }

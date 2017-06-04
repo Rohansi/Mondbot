@@ -10,15 +10,19 @@ namespace MondHost
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new ModifiedJsonLibrary();
+            yield return new ModifiedJsonLibrary(state);
         }
     }
 
     class ModifiedJsonLibrary : IMondLibrary
     {
+        private readonly MondState _state;
+
+        public ModifiedJsonLibrary(MondState state) => _state = state;
+
         public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
         {
-            var jsonModule = MondModuleBinder.Bind(typeof(JsonModule));
+            var jsonModule = MondModuleBinder.Bind(typeof(JsonModule), _state);
             yield return new KeyValuePair<string, MondValue>("Json", jsonModule);
         }
     }
