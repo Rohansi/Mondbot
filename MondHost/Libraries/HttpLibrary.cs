@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Mond;
 using Mond.Binding;
@@ -30,6 +31,22 @@ namespace MondHost.Libraries
             var client = GetHttpClient();
 
             return client.GetStringAsync(uri).Result;
+        }
+
+        [MondFunction("post")]
+        public static string Post(string address, MondValue formData)
+        {
+            if (formData == null || formData.Type != MondValueType.Object)
+                throw new MondRuntimeException("Http.post: formData must be an object");
+
+            var uri = GetUri(address);
+            var client = GetHttpClient();
+
+            var data = formData.Object
+                .Select(kv => new KeyValuePair<string, string>(kv.Key, kv.Value));
+
+            var response = client.PostAsync(uri, new FormUrlEncodedContent(data)).Result;
+            return response.Content.ReadAsStringAsync().Result;
         }
 
         private static Uri GetUri(string uriString)

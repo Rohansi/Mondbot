@@ -39,8 +39,8 @@
     <Reference Include="Microsoft.Win32.Primitives, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Win32.Primitives.4.3.0\lib\net46\Microsoft.Win32.Primitives.dll</HintPath>
     </Reference>
-    <Reference Include="Mond, Version=0.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Mond.0.4.0\lib\netstandard1.3\Mond.dll</HintPath>
+    <Reference Include="Mond, Version=0.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Mond.0.5.0\lib\netstandard1.3\Mond.dll</HintPath>
     </Reference>
     <Reference Include="Npgsql, Version=3.2.3.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
       <HintPath>..\packages\Npgsql.3.2.3\lib\net451\Npgsql.dll</HintPath>
@@ -120,6 +120,7 @@
   <ItemGroup>
     <Compile Include="GraphicsExtensions.cs" />
     <Compile Include="JsonLibrary.cs" />
+    <Compile Include="Libraries\DateTimeLibrary.cs" />
     <Compile Include="Libraries\HttpLibrary.cs" />
     <Compile Include="Libraries\ImageLibrary.cs" />
     <Compile Include="JsonLibrary.Deserialize.cs" />

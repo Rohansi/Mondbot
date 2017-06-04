@@ -66,6 +66,7 @@ namespace MondHost
                             new ImageLibraries(),
                             new RantLibraries(),
                             new RegexLibraries(),
+                            new DateTimeLibraries(),
                         }
                     };
 
