@@ -238,7 +238,7 @@ namespace MondHost
             switch (type)
             {
                 case VariableType.Serialized:
-                    return _state.Call(JsonModule.Deserialize(_state, data), data);
+                    return JsonModule.Deserialize(_state, data);
                 
                 case VariableType.Method:
                     if (version == 1)
@@ -269,7 +269,7 @@ namespace MondHost
 
         private void StoreVariable(string name, MondValue value)
         {
-            var data = (string)_state.Call(JsonModule.Serialize(_state, value), value);
+            var data = JsonModule.Serialize(_state, value);
 
             var cmd = new SqlCommand(_connection, _transaction, @"INSERT INTO mondbot.variables (name, type, data, version) VALUES (:name, :type, :data, 2)
                                                                   ON CONFLICT (name) DO UPDATE SET type = :type, data = :data, version = 2;")
