@@ -150,6 +150,9 @@ namespace MondHost
             if (args.Length != 2)
                 throw new MondRuntimeException("VariableObject.__get: requires 2 parameters");
 
+            if (args[1].Type != MondValueType.String)
+                throw new MondRuntimeException("VariableObject.__get: variable name must be a string");
+
             var name = (string)args[1];
 
             if (TryGetBuiltin(name, out var value))
@@ -180,6 +183,9 @@ namespace MondHost
         {
             if (args.Length != 3)
                 throw new MondRuntimeException("VariableObject.__set: requires 3 parameters");
+
+            if (args[1].Type != MondValueType.String)
+                throw new MondRuntimeException("VariableObject.__set: variable name must be a string");
 
             var name = (string)args[1];
 
@@ -232,7 +238,7 @@ namespace MondHost
             switch (type)
             {
                 case VariableType.Serialized:
-                    return _state.Call(_state["Json"]["deserialize"], data);
+                    return _state.Call(JsonModule.Deserialize(_state, data), data);
                 
                 case VariableType.Method:
                     if (version == 1)
@@ -263,7 +269,7 @@ namespace MondHost
 
         private void StoreVariable(string name, MondValue value)
         {
-            var data = (string)_state.Call(_state["Json"]["serialize"], value);
+            var data = (string)_state.Call(JsonModule.Serialize(_state, value), value);
 
             var cmd = new SqlCommand(_connection, _transaction, @"INSERT INTO mondbot.variables (name, type, data, version) VALUES (:name, :type, :data, 2)
                                                                   ON CONFLICT (name) DO UPDATE SET type = :type, data = :data, version = 2;")

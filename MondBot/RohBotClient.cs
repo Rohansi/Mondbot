@@ -113,12 +113,17 @@ namespace MondBot
 
         private void SocketClosed(object sender, CloseEventArgs args)
         {
-            _socket.Connect();
+            Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+                _socket.Connect();
+            });
         }
 
         private void SocketErrored(object sender, ErrorEventArgs args)
         {
             Log("WebSocket error: {0} {1}", args.Message, args.Exception);
+            _socket.Close();
         }
 
         private static void Log(string format, params object[] args)

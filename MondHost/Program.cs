@@ -36,6 +36,8 @@ namespace MondHost
 
             var worker = new Worker();
 
+            worker.Run("", "", "", "Image.clear(Color(0, 0, 0));"); // warmup
+
             while (true)
             {
                 GC.Collect();
