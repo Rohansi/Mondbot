@@ -22,7 +22,7 @@ namespace MondHost
         private NpgsqlTransaction _transaction;
 
         private MondState _state;
-        private Dictionary<string, MondValue> _variableCache;
+        private Dictionary<string, CacheEntry> _variableCache;
         private HashSet<string> _loadingVariables;
 
         private MondValue _service;
@@ -81,7 +81,7 @@ namespace MondHost
                     var global = _state.Run("return global;");
                     global.Prototype = MondValue.Null;
 
-                    _variableCache = new Dictionary<string, MondValue>();
+                    _variableCache = new Dictionary<string, CacheEntry>();
                     _loadingVariables = new HashSet<string>();
 
                     var variableGetter = new MondValue(VariableGetter);
@@ -113,6 +113,21 @@ namespace MondHost
                         {
                             output.WriteLine(result.Serialize());
                         }
+                    }
+
+                    var comparer = new MondValueComparer(_state);
+                    foreach (var kv in _variableCache)
+                    {
+                        var entry = kv.Value;
+                        if (entry.IsMethod)
+                            continue;
+
+                        var same = comparer.Equals(entry.Original, entry.Current);
+                        Console.WriteLine("Variable {0} same: {1}", kv.Key, same);
+                        if (same)
+                            continue;
+
+                        StoreVariable(kv.Key, entry.Current);
                     }
 
                     _transaction.Commit();
@@ -155,22 +170,22 @@ namespace MondHost
 
             var name = (string)args[1];
 
-            if (TryGetBuiltin(name, out var value))
-                return value;
+            if (TryGetBuiltin(name, out var builtinValue))
+                return builtinValue;
             
-            if (_variableCache.TryGetValue(name, out value))
-                return value;
+            if (_variableCache.TryGetValue(name, out var entry))
+                return entry.Current;
 
             if (!_loadingVariables.Add(name))
                 throw new MondRuntimeException($"Variable '{name}' could not finish loading due to a circular dependency");
 
             try
             {
-                value = LoadVariable(name);
+                var (value, isMethod) = LoadVariable(name);
                 if (value == null)
                     throw new MondRuntimeException($"Undefined variable '{name}'");
 
-                _variableCache.Add(name, value);
+                _variableCache.Add(name, new CacheEntry(_state, isMethod, value, value));
                 return value;
             }
             finally
@@ -193,9 +208,11 @@ namespace MondHost
                 return value;
             
             value = args[2];
+            
+            if (_variableCache.TryGetValue(name, out var entry))
+                return entry.Current = value;
 
-            StoreVariable(name, value);
-            _variableCache[name] = value;
+            _variableCache.Add(name, new CacheEntry(_state, false, null, value));
             return value;
         }
 
@@ -213,7 +230,7 @@ namespace MondHost
             return value != null;
         }
 
-        private MondValue LoadVariable(string name)
+        private (MondValue value, bool isMethod) LoadVariable(string name)
         {
             VariableType type;
             string data;
@@ -228,7 +245,7 @@ namespace MondHost
             {
                 var result = cmd.Execute().Result.SingleOrDefault();
                 if (result == null)
-                    return null;
+                    return (null, false);
 
                 type = (VariableType)(short)result.type;
                 data = (string)result.data;
@@ -238,13 +255,13 @@ namespace MondHost
             switch (type)
             {
                 case VariableType.Serialized:
-                    return JsonModule.Deserialize(_state, data);
+                    return (JsonModule.Deserialize(_state, data), false);
                 
                 case VariableType.Method:
                     if (version == 1)
                     {
                         var code = "return " + data + ";";
-                        return _state.Run(code, name + ".mnd");
+                        return (_state.Run(code, name + ".mnd"), true);
                     }
                     else if (version == 2)
                     {
@@ -255,7 +272,7 @@ namespace MondHost
                         else
                             code += $"\n;return global.__ops[\"{name}\"];";
 
-                        return _state.Run(code, name + ".mnd");
+                        return (_state.Run(code, name + ".mnd"), true);
                     }
                     else
                     {

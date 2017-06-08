@@ -15,13 +15,19 @@ namespace MondBot
         {
             RunModule.Initialize();
 
+#if !DEBUG
             var telegramThread = new Thread(RunTelegramBot);
             telegramThread.Start();
+#endif
 
             using (var rohbot = new RohBotBot())
+#if !DEBUG
             using (var discord = new DiscordBot())
+#endif
             {
+#if !DEBUG
                 discord.Start().Wait();
+#endif
                 Thread.Sleep(-1);
             }
         }

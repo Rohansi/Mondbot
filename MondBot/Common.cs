@@ -85,7 +85,7 @@ namespace MondBot
 
         private static string CleanupCode(string code)
         {
-            return code.Trim().Trim('`').Trim();
+            return code.Replace("\r\n", "\n").Replace('\r', '\n').Trim().Trim('`').Trim();
         }
     }
 }

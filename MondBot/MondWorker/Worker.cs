@@ -66,7 +66,12 @@ namespace MondBot
             await sendStream.WriteStringAsync(username);
             await sendStream.WriteStringAsync(source);
 
+#if !DEBUG
             var timeout = _isNew ? 12 : 10;
+#else
+            var timeout = 1000000;
+#endif
+
             _isNew = false;
 
             // wait for output or timeout
