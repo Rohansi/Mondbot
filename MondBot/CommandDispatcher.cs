@@ -1,19 +1,29 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MondBot
 {
-    class CommandDispatcher<T> : IEnumerable<KeyValuePair<string, CommandDispatcher<T>.CommandHandler>>
+    class CommandDispatcher<TRoom, TUser>
+        : IEnumerable<KeyValuePair<string, CommandDispatcher<TRoom, TUser>.CommandHandler>>
     {
-        public delegate Task CommandHandler(T from, string userid, string username, string arguments);
+        public delegate Task<(string userid, string username)> UserIdentifierReader(TUser user);
+        public delegate Task CommandHandler(TRoom room, TUser user, string arguments);
 
         private readonly Dictionary<string, CommandHandler> _handlers;
+        private readonly UserIdentifierReader _userReader;
 
-        public CommandDispatcher() =>
+        public CommandDispatcher(UserIdentifierReader reader)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
             _handlers = new Dictionary<string, CommandHandler>();
+            _userReader = reader;
+        }
 
-        public Task Dispatch(string prefix, T from, string userid, string username, string message)
+        public Task Dispatch(string prefix, TRoom room, TUser user, string message)
         {
             if (!message.StartsWith(prefix))
                 return Task.CompletedTask;
@@ -29,8 +39,10 @@ namespace MondBot
                 return Task.CompletedTask;
 
             var arguments = split.Length == 1 ? "" : split[1];
-            return handler(from, userid, username, arguments);
+            return handler(room, user, arguments);
         }
+
+        public Task<(string userid, string username)> GetUserIdentifiers(TUser user) => _userReader(user);
 
         public void Add(string key, CommandHandler handler) =>
             _handlers.Add(key, handler);

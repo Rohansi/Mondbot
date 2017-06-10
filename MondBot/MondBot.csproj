@@ -34,11 +34,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DSharpPlus, Version=2.1.9.31, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.2.1.9-rc-00031\lib\net46\DSharpPlus.dll</HintPath>
+    <Reference Include="DSharpPlus, Version=2.1.9.36, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.2.1.9-rc-00036\lib\net46\DSharpPlus.dll</HintPath>
     </Reference>
-    <Reference Include="DSharpPlus.WebSocket.WebSocketSharp, Version=2.1.9.31, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.WebSocket.WebSocketSharp.2.1.9-rc-00031\lib\net46\DSharpPlus.WebSocket.WebSocketSharp.dll</HintPath>
+    <Reference Include="DSharpPlus.WebSocket.WebSocketSharp, Version=2.1.9.36, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.WebSocket.WebSocketSharp.2.1.9-rc-00036\lib\net46\DSharpPlus.WebSocket.WebSocketSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Humanizer, Version=2.2.0.0, Culture=neutral, PublicKeyToken=979442b78dfc278e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Humanizer.Core.2.2.0\lib\netstandard1.0\Humanizer.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Owin.3.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
@@ -117,6 +120,7 @@
     <Compile Include="CommandDispatcher.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="DiscordBot.cs" />
+    <Compile Include="DiscordInteractivity.cs" />
     <Compile Include="MondWorker\RunException.cs" />
     <Compile Include="MondWorker\RunModule.cs" />
     <Compile Include="MondWorker\Worker.cs" />

@@ -11,12 +11,12 @@ namespace MondBot
     {
         private const string Service = "rohbot";
 
-        private readonly CommandDispatcher<string> _commandDispatcher;
+        private readonly CommandDispatcher<string, (string, string)> _commandDispatcher;
         private readonly RohBotClient _client;
 
         public RohBotBot()
         {
-            _commandDispatcher = new CommandDispatcher<string>
+            _commandDispatcher = new CommandDispatcher<string, (string, string)>(Task.FromResult)
             {
                 { "help", DoHelp },
                 { "h", DoHelp },
@@ -45,9 +45,9 @@ namespace MondBot
         public void Dispose() => _client.Dispose();
 
         private Task MessageReceived(string chat, string userid, string username, string message) =>
-            _commandDispatcher.Dispatch("+", chat, userid, username, message);
+            _commandDispatcher.Dispatch("+", chat, (userid, username), message);
 
-        private Task DoHelp(string from, string userid, string username, string arguments)
+        private Task DoHelp(string from, (string, string) user, string arguments)
         {
             return SendMessage(from, @"I run Mond code for you!
 +run <code> - run a script
@@ -55,11 +55,12 @@ namespace MondBot
 +view <name> - view the value of a variable or function");
         }
 
-        private async Task DoRun(string from, string userid, string username, string arguments)
+        private async Task DoRun(string from, (string, string) user, string arguments)
         {
             if (string.IsNullOrWhiteSpace(arguments))
                 return;
-    
+
+            var (userid, username) = user;
             var (image, output) = await Common.RunScript(Service, userid, username, arguments);
 
             var description = "Finished with no output.";
@@ -74,13 +75,14 @@ namespace MondBot
             await SendMessage(from, description.Trim());
         }
 
-        private async Task DoMethod(string from, string userid, string username, string arguments)
+        private async Task DoMethod(string from, (string, string) user, string arguments)
         {
+            var (userid, username) = user;
             var (result, _) = await Common.AddMethod(Service, userid, username, arguments);
             await SendMessage(from, result);
         }
 
-        private async Task DoView(string from, string userid, string username, string arguments)
+        private async Task DoView(string from, (string, string) user, string arguments)
         {
             var name = arguments.Trim();
             var data = await Common.ViewVariable(name);

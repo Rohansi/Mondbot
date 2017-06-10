@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using DSharpPlus;
+using Humanizer;
+using Humanizer.Localisation;
 
 namespace MondBot
 {
@@ -10,12 +13,19 @@ namespace MondBot
     {
         private const string Service = "discord";
 
-        private readonly CommandDispatcher<DiscordChannel> _commandDispatcher;
+        private readonly CommandDispatcher<DiscordChannel, DiscordUser> _commandDispatcher;
         private readonly DiscordClient _bot;
+        private readonly InteractivityModule _interactivity;
+        private readonly Stopwatch _uptime;
 
         public DiscordBot()
         {
-            _commandDispatcher = new CommandDispatcher<DiscordChannel>
+            Task<(string userid, string username)> UserIdentifierReader(DiscordUser user)
+            {
+                return Task.FromResult((user.Id.ToString("G"), user.Username));
+            }
+
+            _commandDispatcher = new CommandDispatcher<DiscordChannel, DiscordUser>(UserIdentifierReader)
             {
                 { "h", DoHelp },
                 { "help", DoHelp },
@@ -52,10 +62,17 @@ namespace MondBot
             _bot = new DiscordClient(config);
             _bot.SetWebSocketClient<WebSocketSharpClient>();
 
+            _interactivity = _bot.UseInteractivity();
+            _uptime = new Stopwatch();
+
             _bot.DebugLogger.LogMessageReceived += (o, e) =>
                 Console.WriteLine($"[{e.Timestamp}] [{e.Application}] [{e.Level}] {e.Message}");
 
-            _bot.Ready += args => _bot.UpdateStatusAsync("+h for help");
+            _bot.Ready += async args =>
+            {
+                _uptime.Restart();
+                await _bot.UpdateStatusAsync("+h for help");
+            };
 
             _bot.MessageCreated += MessageReceived;
         }
@@ -64,25 +81,27 @@ namespace MondBot
 
         public Task Start() => _bot.ConnectAsync();
 
-        private async Task MessageReceived(MessageCreateEventArgs args)
+        private Task MessageReceived(MessageCreateEventArgs args)
         {
-            try
-            {
-                if (args.Author.IsBot)
-                    return;
+            if (args.Author.IsBot)
+                return Task.CompletedTask;
 
-                await _commandDispatcher.Dispatch("+", args.Channel,
-                    args.Author.Id.ToString("G"),
-                    args.Author.Username,
-                    args.Message.Content);
-            }
-            catch (Exception e)
+            Task.Run(async () =>
             {
-                Console.WriteLine("Discord message error: " + e);
-            }
+                try
+                {
+                    await _commandDispatcher.Dispatch("+", args.Channel, args.Author, args.Message.Content);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Discord message error: " + e);
+                }
+            });
+
+            return Task.CompletedTask;
         }
 
-        private async Task DoHelp(DiscordChannel from, string userid, string username, string arguments)
+        private async Task DoHelp(DiscordChannel room, DiscordUser user, string arguments)
         {
             var embed = new DiscordEmbed
             {
@@ -103,10 +122,10 @@ namespace MondBot
                 }
             };
 
-            await from.SendMessageAsync("", embed: embed);
+            await room.SendMessageAsync("", embed: embed);
         }
 
-        private async Task DoInfo(DiscordChannel from, string userid, string username, string arguments)
+        private async Task DoInfo(DiscordChannel room, DiscordUser user, string arguments)
         {
             var embed = new DiscordEmbed
             {
@@ -116,7 +135,12 @@ namespace MondBot
                     new DiscordEmbedField
                     {
                         Name = "Creator",
-                        Value = "Rohan#2847"
+                        Value = "<@85484593636970496>"
+                    },
+                    new DiscordEmbedField
+                    {
+                        Name = "Uptime",
+                        Value = _uptime.Elapsed.Humanize(minUnit: TimeUnit.Second)
                     },
                     new DiscordEmbedField
                     {
@@ -131,14 +155,15 @@ namespace MondBot
                 }
             };
 
-            await from.SendMessageAsync("", embed: embed);
+            await room.SendMessageAsync("", embed: embed);
         }
 
-        private async Task DoRun(DiscordChannel from, string userid, string username, string arguments)
+        private async Task DoRun(DiscordChannel room, DiscordUser user, string arguments)
         {
             if (string.IsNullOrWhiteSpace(arguments))
                 return;
 
+            var (userid, username) = await _commandDispatcher.GetUserIdentifiers(user);
             var (image, output) = await Common.RunScript(Service, userid, username, arguments);
 
             var description = "Finished with no output.";
@@ -150,46 +175,51 @@ namespace MondBot
             if (image != null)
             {
                 var stream = new MemoryStream(image);
-                await from.SendFileAsync(stream, "photo.png", description);
+                await room.SendFileAsync(stream, "photo.png", description);
                 return; // image with output!
             }
 
-            await SendMessage(from, description);
+            await SendMessage(room, description);
         }
 
-        private async Task DoMethod(DiscordChannel from, string userid, string username, string arguments)
+        private async Task DoMethod(DiscordChannel room, DiscordUser user, string arguments)
         {
+            var (userid, username) = await _commandDispatcher.GetUserIdentifiers(user);
             var (result, isCode) = await Common.AddMethod(Service, userid, username, arguments);
-            await SendMessage(from, result, isCode);
+            await SendMessage(room, result, isCode);
         }
 
-        private async Task DoView(DiscordChannel from, string userid, string username, string arguments)
+        private async Task DoView(DiscordChannel room, DiscordUser user, string arguments)
         {
             var name = arguments.Trim();
             var data = await Common.ViewVariable(name);
 
             if (data == null)
             {
-                await SendMessage(from, $"Variable {CodeField(name)} doesn't exist!");
+                await SendMessage(room, $"Variable {CodeField(name)} doesn't exist!");
                 return;
             }
 
-            await SendMessage(from, $"**Variable: {CodeField(name)}**\n{CodeBlock(data)}");
+            string Header(int page, int total) =>
+                $"({page}/{total}) **Variable: {CodeField(name)}**\n";
+
+            var pages = _interactivity.GeneratePagesInStrings(data, Header, CodeBlock);
+            await _interactivity.SendPaginatedMessage(room, user, pages, TimeSpan.FromMinutes(2));
         }
 
-        private static async Task SendMessage(DiscordChannel to, string text, bool isCode = false)
+        private static async Task SendMessage(DiscordChannel room, string text, bool isCode = false)
         {
             if (isCode)
             {
-                await to.SendMessageAsync(CodeBlock(text));
+                await room.SendMessageAsync(CodeBlock(text));
             }
             else
             {
-                await to.SendMessageAsync(text);
+                await room.SendMessageAsync(text);
             }
         }
 
         private static string CodeField(string text) => "`" + text.Replace('`', '´') + "`";
-        private static string CodeBlock(string text) => "```\n" + text.Replace("```", "´´´") + "\n```";
+        private static string CodeBlock(string text) => "```" + text.Replace("```", "´´´") + "```";
     }
 }
