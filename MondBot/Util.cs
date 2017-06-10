@@ -20,5 +20,15 @@ namespace MondBot
                 .OrderByDescending(p => p.Width * p.Height)
                 .First();
         }
+
+        public static string Truncated(this string text)
+        {
+            const int cutoff = 1400;
+
+            if (text.Length < cutoff)
+                return text;
+
+            return text.Substring(0, cutoff);
+        }
     }
 }

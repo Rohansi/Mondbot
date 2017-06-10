@@ -91,7 +91,7 @@ namespace MondBot
                 return;
             }
 
-            await SendMessage(from, $"Variable: '{name}'\n{data}");
+            await SendMessage(from, $"Variable: '{name}'\n{data.Truncated()}");
         }
 
         private Task SendMessage(string to, string message)

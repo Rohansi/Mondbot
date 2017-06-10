@@ -227,7 +227,7 @@ namespace MondBot
                 return;
             }
 
-            await SendMessage(message, data, true);
+            await SendMessage(message, data.Truncated(), true);
         }
 
         private static async Task SendMessage(Message replyTo, string text, bool isCode = false)

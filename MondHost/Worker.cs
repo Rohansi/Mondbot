@@ -13,6 +13,9 @@ namespace MondHost
 {
     class Worker
     {
+        const int MaxVariableNameSize = 512;
+        const int MaxVariableContentSize = 10 * 1024;
+
         const int MaxOutputChars = 1024;
         const int MaxOutputLines = 20;
 
@@ -286,7 +289,13 @@ namespace MondHost
 
         private void StoreVariable(string name, MondValue value)
         {
+            if (name.Length > MaxVariableNameSize)
+                throw new MondRuntimeException($"Variable name '{name}' is too long");
+
             var data = JsonModule.Serialize(_state, value);
+
+            if (data.Length > MaxVariableContentSize)
+                throw new MondRuntimeException($"Variable '{name}' exceeds maximum size");
 
             var cmd = new SqlCommand(_connection, _transaction, @"INSERT INTO mondbot.variables (name, type, data, version) VALUES (:name, :type, :data, 2)
                                                                   ON CONFLICT (name) DO UPDATE SET type = :type, data = :data, version = 2;")
