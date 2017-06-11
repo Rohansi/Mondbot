@@ -83,7 +83,6 @@ namespace MondBot
 
         public async Task SendPaginatedMessage(
             DiscordChannel channel,
-            DiscordUser user,
             IReadOnlyList<Page> pages,
             TimeSpan timeout,
             TimeoutBehaviour timeoutBehaviour = TimeoutBehaviour.Default)
@@ -120,31 +119,26 @@ namespace MondBot
             
             await AddReactions(m);
 
-            async Task Handler1(MessageReactionRemoveAllEventArgs e)
+            async Task AllReactionsRemoved(MessageReactionRemoveAllEventArgs e)
             {
-                if (e.MessageID != m.Id)
+                if (e.MessageId != m.Id)
                     return;
 
                 await AddReactions(m);
             }
 
-            Client.MessageReactionRemoveAll += Handler1;
+            Client.MessageReactionRemoveAll += AllReactionsRemoved;
 
-            async Task Handler2(MessageReactionAddEventArgs e)
+            async Task ReactionHandlerCommon(ulong messageId, ulong userId, string emoji)
             {
-                if (e.MessageID != m.Id || e.UserID == Client.CurrentUser.Id || e.UserID != user.Id)
+                if (messageId != m.Id || userId == Client.CurrentUser.Id)
                     return;
 
                 try
                 {
-                    if (e.Emoji.Id == 0)
-                        await m.DeleteReactionAsync(e.Emoji.Name, e.UserID);
-                    else
-                        await m.DeleteReactionAsync(e.Emoji.Name + ":" + e.Emoji.Id, e.UserID);
-                    
                     var original = pm.CurrentIndex;
 
-                    switch (e.Emoji.Name)
+                    switch (emoji)
                     {
                         case "⏮":
                             pm.CurrentIndex = 0;
@@ -174,7 +168,14 @@ namespace MondBot
                 }
             }
 
-            Client.MessageReactionAdd += Handler2;
+            Task ReactionAdded(MessageReactionAddEventArgs e) =>
+                ReactionHandlerCommon(e.MessageId, e.User.Id, e.Emoji.Name);
+
+            Task ReactionRemoved(MessageReactionRemoveEventArgs e) =>
+                ReactionHandlerCommon(e.MessageId, e.User.Id, e.Emoji.Name);
+
+            Client.MessageReactionAdd += ReactionAdded;
+            Client.MessageReactionRemove += ReactionRemoved;
 
             await tsc.Task;
 
@@ -188,8 +189,9 @@ namespace MondBot
                     break;
             }
 
-            Client.MessageReactionRemoveAll -= Handler1;
-            Client.MessageReactionAdd -= Handler2;
+            Client.MessageReactionRemoveAll -= AllReactionsRemoved;
+            Client.MessageReactionAdd -= ReactionAdded;
+            Client.MessageReactionRemove -= ReactionRemoved;
         }
         
         public List<Page> GeneratePagesInStrings(
