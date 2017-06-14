@@ -121,7 +121,7 @@ namespace MondBot
 
             async Task AllReactionsRemoved(MessageReactionRemoveAllEventArgs e)
             {
-                if (e.MessageId != m.Id)
+                if (e.Message.Id != m.Id)
                     return;
 
                 await AddReactions(m);
@@ -169,10 +169,10 @@ namespace MondBot
             }
 
             Task ReactionAdded(MessageReactionAddEventArgs e) =>
-                ReactionHandlerCommon(e.MessageId, e.User.Id, e.Emoji.Name);
+                ReactionHandlerCommon(e.Message.Id, e.User.Id, e.Emoji.Name);
 
             Task ReactionRemoved(MessageReactionRemoveEventArgs e) =>
-                ReactionHandlerCommon(e.MessageId, e.User.Id, e.Emoji.Name);
+                ReactionHandlerCommon(e.Message.Id, e.User.Id, e.Emoji.Name);
 
             Client.MessageReactionAdd += ReactionAdded;
             Client.MessageReactionRemove += ReactionRemoved;

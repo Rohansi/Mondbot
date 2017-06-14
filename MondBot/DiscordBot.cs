@@ -134,7 +134,7 @@ namespace MondBot
                     new DiscordEmbedField
                     {
                         Name = "Uptime",
-                        Value = _uptime.Elapsed.Humanize(minUnit: TimeUnit.Second)
+                        Value = _uptime.Elapsed.Humanize(3, true, minUnit: TimeUnit.Second)
                     },
                     new DiscordEmbedField
                     {
