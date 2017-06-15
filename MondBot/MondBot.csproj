@@ -34,11 +34,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DSharpPlus, Version=2.1.9.39, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.2.1.9-rc-00039\lib\net46\DSharpPlus.dll</HintPath>
+    <Reference Include="DSharpPlus, Version=2.1.9.54, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.2.1.9-rc-00054\lib\net46\DSharpPlus.dll</HintPath>
     </Reference>
-    <Reference Include="DSharpPlus.WebSocket.WebSocketSharp, Version=2.1.9.39, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.WebSocket.WebSocketSharp.2.1.9-rc-00039\lib\net46\DSharpPlus.WebSocket.WebSocketSharp.dll</HintPath>
+    <Reference Include="DSharpPlus.WebSocket.WebSocketSharp, Version=2.1.9.54, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.WebSocket.WebSocketSharp.2.1.9-rc-00054\lib\net46\DSharpPlus.WebSocket.WebSocketSharp.dll</HintPath>
     </Reference>
     <Reference Include="Humanizer, Version=2.2.0.0, Culture=neutral, PublicKeyToken=979442b78dfc278e, processorArchitecture=MSIL">
       <HintPath>..\packages\Humanizer.Core.2.2.0\lib\netstandard1.0\Humanizer.dll</HintPath>
