@@ -50,7 +50,6 @@ namespace MondBot
             };
 
             _bot = new DiscordClient(config);
-            _bot.SetWebSocketClient<WebSocketSharpClient>();
 
             _interactivity = _bot.UseInteractivity();
             _uptime = new Stopwatch();

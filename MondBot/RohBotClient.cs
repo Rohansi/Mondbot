@@ -3,7 +3,8 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using WebSocketSharp;
+using WebSocket4Net;
+using SuperSocket.ClientEngine;
 
 namespace MondBot
 {
@@ -73,14 +74,14 @@ namespace MondBot
 
             _socket = new WebSocket("wss://rohbot.net/ws/");
 
-            _socket.OnOpen += SocketOpened;
-            _socket.OnMessage += SocketReceivedMessage;
-            _socket.OnClose += SocketClosed;
-            _socket.OnError += SocketErrored;
+            _socket.Opened += SocketOpened;
+            _socket.MessageReceived += SocketReceivedMessage;
+            _socket.Closed += SocketClosed;
+            _socket.Error += SocketErrored;
 
             try
             {
-                _socket.Connect();
+                _socket.Open();
             }
             catch (Exception e)
             {
@@ -97,8 +98,8 @@ namespace MondBot
             if (socket == null)
                 return;
 
-            socket.OnClose -= SocketClosed;
-            socket.OnError -= SocketErrored;
+            socket.Closed -= SocketClosed;
+            socket.Error -= SocketErrored;
 
             socket.Close();
         }
@@ -114,12 +115,9 @@ namespace MondBot
             }));
         }
 
-        private void SocketReceivedMessage(object sender, MessageEventArgs args)
+        private void SocketReceivedMessage(object sender, MessageReceivedEventArgs args)
         {
-            if (!args.IsText)
-                return;
-
-            var obj = JsonConvert.DeserializeObject<dynamic>(args.Data);
+            var obj = JsonConvert.DeserializeObject<dynamic>(args.Message);
 
             switch ((string)obj.Type)
             {

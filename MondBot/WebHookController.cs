@@ -4,20 +4,22 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Web.Http;
+using Microsoft.AspNetCore.Mvc;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace MondBot
 {
-    public class WebHookController : ApiController
+    [Route("WebHook")]
+    public class WebHookController : Controller
     {
         private const string Service = "telegram";
 
         private static TelegramBotClient Bot => Program.TelegramBot;
 
-        public async Task<IHttpActionResult> Post(Update update)
+        [HttpPost]
+        public async Task<IActionResult> Post([FromBody] Update update)
         {
             if (update.Type == UpdateType.MessageUpdate)
             {

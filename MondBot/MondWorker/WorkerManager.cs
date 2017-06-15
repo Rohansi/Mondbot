@@ -245,7 +245,7 @@ namespace MondBot
                     if (completed != workerIdTask)
                     {
                         Console.WriteLine("WorkerListener: Timed Out");
-                        socket.Close();
+                        socket.Dispose();
                         continue;
                     }
 

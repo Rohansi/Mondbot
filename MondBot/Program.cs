@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Threading;
-using System.Web.Http;
-using Microsoft.Owin.Hosting;
-using Owin;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 
 namespace MondBot
@@ -39,30 +41,47 @@ namespace MondBot
             var me = TelegramBot.GetMeAsync().Result;
             Console.WriteLine(me.Username);
 
-            using (WebApp.Start<Startup>("http://+:8134"))
+            var host = new WebHostBuilder()
+                .UseKestrel()
+                .UseStartup<Startup>()
+                .UseUrls("http://localhost:8134/")
+                .Build();
+
+            using (host)
             {
-                // Register WebHook
+                host.Start();
+                
                 TelegramBot.SetWebhookAsync("https://toronto.rohbot.net/mondbot/WebHook").Wait();
 
-                Console.WriteLine("Server Started");
+                Console.WriteLine("Telegram Started");
 
-                // Stop Server after <Enter>
-                Console.ReadLine();
-
-                // Unregister WebHook
-                TelegramBot.SetWebhookAsync().Wait();
+                Thread.Sleep(-1);
             }
         }
         
         public class Startup
         {
-            public void Configuration(IAppBuilder app)
+            public IConfigurationRoot Configuration { get; }
+
+            public Startup(IHostingEnvironment env)
             {
-                var configuration = new HttpConfiguration();
+                var builder = new ConfigurationBuilder()
+                    .SetBasePath(env.ContentRootPath)
+                    .AddEnvironmentVariables();
 
-                configuration.Routes.MapHttpRoute("WebHook", "{controller}");
+                Configuration = builder.Build();
+            }
 
-                app.UseWebApi(configuration);
+            public void ConfigureServices(IServiceCollection services)
+            {
+                services.AddMvc();
+            }
+
+            public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+            {
+                loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+
+                app.UseMvc();
             }
         }
     }
