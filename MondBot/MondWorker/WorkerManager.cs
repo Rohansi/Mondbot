@@ -16,7 +16,6 @@ namespace MondBot
         public const int MinWorkerProcesses = 2;
 
         private static readonly bool RunningOnMono = Type.GetType("Mono.Runtime") != null;
-        private const bool CpuLimit = true;
 
         private readonly List<Worker> _workers;
         private readonly ConcurrentQueue<Worker> _idleWorkers;
@@ -121,6 +120,8 @@ namespace MondBot
 
         private void Spawn()
         {
+            Console.WriteLine("Spawning new worker");
+
             lock (_workers)
             {
                 // fake the worker count while spawning
@@ -139,43 +140,22 @@ namespace MondBot
                 {
                     startInfo.FileName = "mono";
                     startInfo.Arguments = "MondHost.exe";
-                    startInfo.EnvironmentVariables.Add("MONO_GC_PARAMS", "max-heap-size=256M,soft-heap-limit=128M,nursery-size=16M");
                 }
 
                 var process = Process.Start(startInfo);
                 if (process == null)
                     throw new RunException("No Process");
 
-                if (CpuLimit && RunningOnMono)
+                if (RunningOnMono)
                 {
-                    try
-                    {
-                        var limitStartInfo = new ProcessStartInfo
-                        {
-                            FileName = "cpulimit",
-                            Arguments = string.Format("-z -l 50 -p {0:G}", process.Id),
-                            UseShellExecute = false,
-                        };
-
-                        var limitProcess = Process.Start(limitStartInfo);
-
-                        if (limitProcess == null)
-                            throw new Exception();
-
-                        // if the limitProcess dies we need to kill the worker too
-                        limitProcess.Exited += (sender, args) => process.Kill();
-                    }
-                    catch (Exception e)
-                    {
-                        process.Kill();
-                        throw new RunException("CpuLimit Failed", e);
-                    }
+                    SpawnLimiter("cpulimit", "-z -l 50 -p {0:G}", process);
+                    SpawnLimiter("prlimit", "--as=805306368 --rss=65536 --pid {0:G}", process);
                 }
 
                 // kill the new process if its not added to _workers in a few seconds
                 Task.Run(async () =>
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(3));
+                    await Task.Delay(TimeSpan.FromSeconds(5));
 
                     lock (_workers)
                     {
@@ -184,6 +164,8 @@ namespace MondBot
                         if (_workers.Find(w => w.Process.Id == process.Id) != null)
                             return;
                     }
+
+                    Console.WriteLine("Worker took too long to respond, killing");
 
                     try
                     {
@@ -203,6 +185,41 @@ namespace MondBot
                 }
 
                 throw;
+            }
+        }
+
+        private void SpawnLimiter(string fileName, string argumentsWithPidPlaceholder, Process worker)
+        {
+            try
+            {
+                var limitStartInfo = new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = string.Format(argumentsWithPidPlaceholder, worker.Id),
+                    UseShellExecute = false,
+                };
+
+                var limitProcess = Process.Start(limitStartInfo);
+
+                if (limitProcess == null)
+                    throw new Exception();
+
+                limitProcess.EnableRaisingEvents = true;
+
+                // if the limitProcess fails we need to kill the worker too
+                limitProcess.Exited += (sender, args) =>
+                {
+                    if (limitProcess.ExitCode == 0)
+                        return;
+
+                    Console.WriteLine($"{fileName} unsuccessful, killing worker");
+                    worker.Kill();
+                };
+            }
+            catch (Exception e)
+            {
+                worker.Kill();
+                throw new RunException($"{fileName} failed", e);
             }
         }
 
