@@ -5,7 +5,7 @@ using System.Data.Common;
 using System.Threading.Tasks;
 using Npgsql;
 
-namespace MondBot
+namespace MondBot.Shared
 {
     public sealed class SqlCommand : IDisposable
     {

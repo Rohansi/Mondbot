@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using Newtonsoft.Json;
 
-namespace MondBot
+namespace MondBot.Shared
 {
     public class Settings
     {

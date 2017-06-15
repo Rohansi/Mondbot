@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Dynamic;
 
-namespace MondBot
+namespace MondBot.Shared
 {
     public sealed class SqlResult : DynamicObject
     {

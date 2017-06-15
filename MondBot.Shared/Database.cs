@@ -1,6 +1,6 @@
 ﻿using Npgsql;
 
-namespace MondBot
+namespace MondBot.Shared
 {
     public static class Database
     {

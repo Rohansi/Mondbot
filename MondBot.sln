@@ -1,16 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MondBot", "MondBot\MondBot.csproj", "{42725157-E6B7-470A-8D8A-227CC5129316}"
-	ProjectSection(ProjectDependencies) = postProject
-		{3B432B3C-7630-4452-B69F-FDE3E512B96C} = {3B432B3C-7630-4452-B69F-FDE3E512B96C}
-	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MondHost", "MondHost\MondHost.csproj", "{3B432B3C-7630-4452-B69F-FDE3E512B96C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MondBot.Shared", "MondBot.Shared\MondBot.Shared.csproj", "{87A383CF-8EBC-4AAE-B4F3-332EE20978CF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MondBot.Master", "MondBot.Master\MondBot.Master.csproj", "{B2E00812-1416-4919-BC23-8CE21AE027E1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MondBot.Slave", "MondBot.Slave\MondBot.Slave.csproj", "{47F6007E-8A9A-4073-A589-65A5969CAEF6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,14 +21,18 @@ Global
 		{42725157-E6B7-470A-8D8A-227CC5129316}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42725157-E6B7-470A-8D8A-227CC5129316}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42725157-E6B7-470A-8D8A-227CC5129316}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3B432B3C-7630-4452-B69F-FDE3E512B96C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3B432B3C-7630-4452-B69F-FDE3E512B96C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3B432B3C-7630-4452-B69F-FDE3E512B96C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3B432B3C-7630-4452-B69F-FDE3E512B96C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{87A383CF-8EBC-4AAE-B4F3-332EE20978CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{87A383CF-8EBC-4AAE-B4F3-332EE20978CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87A383CF-8EBC-4AAE-B4F3-332EE20978CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87A383CF-8EBC-4AAE-B4F3-332EE20978CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2E00812-1416-4919-BC23-8CE21AE027E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2E00812-1416-4919-BC23-8CE21AE027E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2E00812-1416-4919-BC23-8CE21AE027E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2E00812-1416-4919-BC23-8CE21AE027E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47F6007E-8A9A-4073-A589-65A5969CAEF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47F6007E-8A9A-4073-A589-65A5969CAEF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47F6007E-8A9A-4073-A589-65A5969CAEF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47F6007E-8A9A-4073-A589-65A5969CAEF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

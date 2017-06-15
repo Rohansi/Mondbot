@@ -1,4 +1,4 @@
-﻿namespace MondBot
+﻿namespace MondBot.Shared
 {
     public enum VariableType
     {

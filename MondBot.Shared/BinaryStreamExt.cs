@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 
-namespace MondBot
+namespace MondBot.Shared
 {
     public static class BinaryStreamExt
     {
