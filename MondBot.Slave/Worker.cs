@@ -125,7 +125,20 @@ namespace MondBot.Slave
                         if (entry.IsMethod)
                             continue;
 
-                        var same = comparer.Equals(entry.Original, entry.Current);
+                        var serialized = true;
+                        var current = entry.Current;
+
+                        // if the original was serialized we need to serialize current and compare with that
+                        // if current can't serialize, they can never match
+                        if (entry.Serialized)
+                        {
+                            if (!MondUtil.TrySerialize(_state, current, out var currentSerialized))
+                                serialized = false;
+                            else
+                                current = currentSerialized;
+                        }
+
+                        var same = serialized && comparer.Equals(entry.Original, current);
                         Console.WriteLine("Variable {0} same: {1}", kv.Key, same);
                         if (same)
                             continue;

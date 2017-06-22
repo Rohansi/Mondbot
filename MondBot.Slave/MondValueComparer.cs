@@ -32,15 +32,11 @@ namespace MondBot.Slave
                 if (y.Type != MondValueType.Object)
                     return false;
 
-                var xSerialize = (bool)x[Serialize];
-                var ySerialize = (bool)y[Serialize];
+                var xSerialize = MondUtil.TrySerialize(_state, x, out var xSerialized);
+                var ySerialize = MondUtil.TrySerialize(_state, y, out var ySerialized);
 
                 if (xSerialize && ySerialize)
-                {
-                    var xSerialized = JsonModule.Serialize(_state, x);
-                    var ySerialized = JsonModule.Serialize(_state, y);
                     return Equals(xSerialized, ySerialized);
-                }
 
                 if (!xSerialize && !ySerialize)
                 {

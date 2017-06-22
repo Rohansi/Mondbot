@@ -1,4 +1,5 @@
-﻿using Mond;
+﻿using System;
+using Mond;
 
 namespace MondBot.Slave
 {
@@ -9,6 +10,7 @@ namespace MondBot.Slave
         public bool IsMethod { get; private set; }
 
         public MondValue Original { get; }
+        public bool Serialized { get; }
 
         public MondValue Current
         {
@@ -22,9 +24,27 @@ namespace MondBot.Slave
 
         public CacheEntry(MondState state, bool isMethod, MondValue original, MondValue value)
         {
+            if (state == null)
+                throw new ArgumentNullException(nameof(state));
+
+            if (ReferenceEquals(value, null))
+                throw new ArgumentNullException(nameof(value));
+
             _current = value;
             IsMethod = isMethod;
-            Original = !isMethod && ReferenceEquals(original, value) ? Clone(state, value) : original;
+
+            if (!ReferenceEquals(original, null))
+            {
+                if (MondUtil.TrySerialize(state, original, out var serialized))
+                {
+                    Original = serialized;
+                    Serialized = true;
+                }
+                else
+                {
+                    Original = Clone(state, value);
+                }
+            }
         }
 
         private static MondValue Clone(MondState state, MondValue value)

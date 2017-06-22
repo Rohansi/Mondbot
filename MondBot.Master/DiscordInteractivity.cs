@@ -90,7 +90,7 @@ namespace MondBot.Master
             if (pages.Count == 0)
                 throw new ArgumentException("You need to provide at least 1 page!");
 
-            var m = await Client.SendMessageAsync(channel.Id, pages[0].Content);
+            var m = await Client.SendMessageAsync(channel, pages[0].Content);
 
             if (pages.Count == 1)
                 return; // can't navigate with only 1 page
@@ -108,13 +108,13 @@ namespace MondBot.Master
 
             async Task AddReactions(DiscordMessage msg)
             {
-                await msg.CreateReactionAsync("⏮");
+                await msg.CreateReactionAsync(DiscordEmoji.FromUnicode(Client, "⏮"));
                 await Task.Delay(500, ct.Token);
-                await msg.CreateReactionAsync("◀");
+                await msg.CreateReactionAsync(DiscordEmoji.FromUnicode(Client, "◀"));
                 await Task.Delay(500, ct.Token);
-                await msg.CreateReactionAsync("▶");
+                await msg.CreateReactionAsync(DiscordEmoji.FromUnicode(Client, "▶"));
                 await Task.Delay(500, ct.Token);
-                await msg.CreateReactionAsync("⏭");
+                await msg.CreateReactionAsync(DiscordEmoji.FromUnicode(Client, "⏭"));
             }
             
             await AddReactions(m);
