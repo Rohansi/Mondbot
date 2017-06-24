@@ -20,7 +20,7 @@ namespace MondBot.Master
 
 #if !DEBUG
             var telegramThread = new Thread(RunTelegramBot);
-            telegramThread.Start();
+            //telegramThread.Start();
 #endif
 
             using (var rohbot = new RohBotBot())

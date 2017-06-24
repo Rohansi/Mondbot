@@ -212,6 +212,6 @@ namespace MondBot.Master
         }
 
         private static string CodeField(string text) => "`" + text.Replace('`', '´') + "`";
-        private static string CodeBlock(string text) => "```" + text.Replace("```", "´´´") + "```";
+        private static string CodeBlock(string text) => "```\n" + text.Replace("```", "´´´") + "```";
     }
 }
