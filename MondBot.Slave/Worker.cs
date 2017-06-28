@@ -87,12 +87,13 @@ namespace MondBot.Slave
                     _variableCache = new Dictionary<string, CacheEntry>();
                     _loadingVariables = new HashSet<string>();
 
-                    var variableGetter = new MondValue(VariableGetter);
-                    var variableSetter = new MondValue(VariableSetter);
+                    _state["__ops"] = new MondValue(_state)
+                    {
+                        ["__get"] = new MondValue(VariableGetterOldOperator)
+                    };
 
-                    _state["__ops"]["__get"] = variableGetter;
-                    _state["__get"] = variableGetter;
-                    _state["__set"] = variableSetter;
+                    _state["__get"] = new MondValue(VariableGetter);
+                    _state["__set"] = new MondValue(VariableSetter);
 
                     var program = source;
 
@@ -106,8 +107,8 @@ namespace MondBot.Slave
 
                         if (result["moveNext"])
                         {
-                            output.WriteLine("sequence (20 max):");
-                            foreach (var i in result.Enumerate(_state).Take(20))
+                            output.WriteLine("sequence (15 max):");
+                            foreach (var i in result.Enumerate(_state).Take(15))
                             {
                                 output.WriteLine(i.Serialize());
                             }
@@ -322,6 +323,17 @@ namespace MondBot.Slave
             {
                 cmd.ExecuteNonQuery().Wait();
             }
+        }
+
+        private MondValue VariableGetterOldOperator(MondState state, params MondValue[] args)
+        {
+            var op = (string)args[1];
+
+            if (!Util.TryConvertOperatorName(op, out var name))
+                throw new MondRuntimeException($"Invalid operator '{op}'");
+
+            args[1] = name;
+            return VariableGetter(state, args);
         }
     }
 }

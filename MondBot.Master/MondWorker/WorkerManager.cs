@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -135,16 +136,21 @@ namespace MondBot.Master
             {
                 var startInfo = new ProcessStartInfo
                 {
-                    FileName = "MondBot",
-                    Arguments = "--slave",
                     UseShellExecute = false,
                 };
 
                 if (IsDeployed)
                 {
                     startInfo.FileName = "MondBot";
+                    startInfo.Arguments = "--slave";
                 }
-
+                else
+                {
+                    var exeDir = Path.GetDirectoryName(typeof(WorkerManager).GetTypeInfo().Assembly.Location);
+                    startInfo.FileName = "dotnet";
+                    startInfo.Arguments = $"exec {Path.Combine(exeDir, "MondBot.dll")} --slave";
+                }
+                
                 var process = Process.Start(startInfo);
                 if (process == null)
                     throw new RunException("No Process");
@@ -165,7 +171,7 @@ namespace MondBot.Master
                     {
                         _workers.Remove(null);
 
-                        if (_workers.Find(w => w.Process.Id == process.Id) != null)
+                        if (_workers.Find(w => w != null && w.Process.Id == process.Id) != null)
                             return;
                     }
 

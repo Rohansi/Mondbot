@@ -26,7 +26,7 @@ namespace MondBot.Master
         //private static readonly Regex AddCommandRegex = new Regex(@"^\s*(\w+|[\.\=\+\-\*\/\%\&\|\^\~\<\>\!\?\@\#\$\\]+)\s+(.+)$", RegexOptions.Singleline);
 
         private static readonly Regex AddCommandRegex = new Regex(
-            @"(?:^(?:\@[\w\.]+(?:\((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!))\))?\s+)+|^)(?:fun|seq)\s+(?:(?<name>\w+)|\((?<name>[\.\=\+\-\*\/\%\&\|\^\~\<\>\!\?\@\#\$\\]+)\))\s*\(",
+            @"(?:^(?:\@[\w\.]+(?:\((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!))\))?\s+)+|^)(?:fun|seq)(?:\s+(?<name>\w+)|\s*(?<name>\([\.\=\+\-\*\/\%\&\|\^\~\<\>\!\?\@\#\$\\]+\)))\s*\(",
             RegexOptions.Singleline);
 
         public static async Task<(string result, bool isCode)> AddMethod(string service, string userid, string username, string arguments)
@@ -38,22 +38,25 @@ namespace MondBot.Master
                 return ("Usage: /method <named function>", false);
 
             var name = match.Groups["name"].Value;
-
-            var testCode = code;
-            if (char.IsLetterOrDigit(name[0]) || name[0] == '_')
-                testCode += $"\n;return {name};";
-            else
-                testCode += $"\n;return global.__ops[\"{name}\"];";
+            var testCode = $"{code};\nreturn {name};";
             
             var result = (await RunModule.Run(service, userid, username, testCode)).Output.Trim();
 
             if (result.StartsWith("ERROR:") || result.StartsWith("EXCEPTION:") || result.StartsWith("mondbox"))
                 return (result, true);
 
+            var methodName = name;
+
+            if (name[0] == '(')
+            {
+                if (!Shared.Util.TryConvertOperatorName(name.Substring(1, name.Length - 2), out methodName))
+                    return ("Failed to get method name of operator.", false);
+            }
+
             var cmd = new SqlCommand(@"INSERT INTO mondbot.variables (name, type, data, version) VALUES (:name, :type, :data, 2)
                                        ON CONFLICT (name) DO UPDATE SET type = :type, data = :data, version = 2;")
             {
-                ["name"] = name,
+                ["name"] = methodName,
                 ["type"] = (int)VariableType.Method,
                 ["data"] = code
             };
