@@ -16,8 +16,8 @@ namespace MondBot.Slave
         const int MaxVariableNameSize = 512;
         const int MaxVariableContentSize = 10 * 1024;
 
-        const int MaxOutputChars = 1024;
-        const int MaxOutputLines = 20;
+        const int MaxOutputChars = 1990;
+        const int MaxOutputLines = 30;
 
         private readonly StringBuilder _outputBuffer;
         

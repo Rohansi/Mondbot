@@ -35,7 +35,7 @@ namespace MondBot.Master
 
             var match = AddCommandRegex.Match(code);
             if (!match.Success)
-                return ("Usage: /method <named function>", false);
+                return ("Usage: +fun <named function>", false);
 
             var name = match.Groups["name"].Value;
             var testCode = $"{code};\nreturn {name};";
@@ -71,6 +71,9 @@ namespace MondBot.Master
 
         public static async Task<string> ViewVariable(string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
             var cmd = new SqlCommand(@"SELECT * FROM mondbot.variables WHERE name = :name;")
             {
                 ["name"] = name.Trim()

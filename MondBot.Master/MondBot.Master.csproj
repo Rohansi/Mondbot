@@ -6,8 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DSharpPlus" Version="2.2.2" />
-    <PackageReference Include="DSharpPlus.Interactivity" Version="2.2.2" />
+    <PackageReference Include="DSharpPlus" Version="2.5.1" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="2.5.1" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="2.5.1" />
     <PackageReference Include="Humanizer.Core" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore" Version="1.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="1.1.3" />

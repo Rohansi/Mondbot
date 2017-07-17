@@ -4,42 +4,24 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.Interactivity;
 using Humanizer;
 using Humanizer.Localisation;
 using MondBot.Shared;
+using DSharpPlus.CommandsNext.Attributes;
 
 namespace MondBot.Master
 {
     internal class DiscordBot : IDisposable
     {
-        private const string Service = "discord";
+        public InteractivityModule Interactivity { get; }
+        public Stopwatch Uptime { get; }
 
-        private readonly CommandDispatcher<DiscordChannel> _commandDispatcher;
         private readonly DiscordClient _bot;
-        private readonly InteractivityModule _interactivity;
-        private readonly Stopwatch _uptime;
 
         public DiscordBot()
         {
-            _commandDispatcher = new CommandDispatcher<DiscordChannel>
-            {
-                { "h", DoHelp },
-                { "help", DoHelp },
-
-                { "i", DoInfo },
-                { "info", DoInfo },
-
-                { "r", DoRun },
-                { "run", DoRun },
-
-                { "f", DoMethod },
-                { "fun", DoMethod },
-                { "func", DoMethod },
-
-                { "v", DoView },
-                { "view", DoView },
-            };
-
             var config = new DiscordConfig
             {
                 AutoReconnect = true,
@@ -47,55 +29,59 @@ namespace MondBot.Master
                 LargeThreshold = 2000,
                 Token = Settings.Instance.DiscordToken,
                 TokenType = TokenType.Bot,
-                UseInternalLogHandler = false
+                UseInternalLogHandler = false,
+                LogLevel = LogLevel.Debug
             };
 
             _bot = new DiscordClient(config);
 
-            _interactivity = _bot.UseInteractivity();
-            _uptime = new Stopwatch();
+            var commands = _bot.UseCommandsNext(new CommandsNextConfiguration
+            {
+                CaseSensitive = false,
+                EnableDefaultHelp = false,
+                EnableDms = true,
+                EnableMentionPrefix = true,
+                StringPrefix = "+",
+                Dependencies = new DependencyCollectionBuilder().AddInstance(this).Build()
+            });
+            
+            commands.RegisterCommands<DiscordCommands>();
+
+            Interactivity = _bot.UseInteractivity();
+            Uptime = new Stopwatch();
 
             _bot.DebugLogger.LogMessageReceived += (o, e) =>
                 Console.WriteLine($"[{e.Timestamp}] [{e.Application}] [{e.Level}] {e.Message}");
 
             _bot.Ready += async args =>
             {
-                _uptime.Restart();
+                Uptime.Restart();
                 await _bot.UpdateStatusAsync(new Game { Name = "+h for help" });
             };
-
-            _bot.MessageCreated += MessageReceived;
         }
 
         public void Dispose() => _bot.Dispose();
 
         public Task Start() => _bot.ConnectAsync();
+    }
 
-        private Task MessageReceived(MessageCreateEventArgs args)
+    internal sealed class DiscordCommands
+    {
+        private const string Service = "discord";
+
+        private readonly DiscordBot _bot;
+        private readonly InteractivityModule _interactivity;
+
+        public DiscordCommands(DiscordBot bot)
         {
-            if (args.Author.IsBot)
-                return Task.CompletedTask;
-
-            Task.Run(async () =>
-            {
-                try
-                {
-                    await _commandDispatcher.Dispatch("+",
-                        args.Channel,
-                        args.Author.Id.ToString("G"),
-                        args.Author.Username,
-                        args.Message.Content);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Discord message error: " + e);
-                }
-            });
-
-            return Task.CompletedTask;
+            _bot = bot;
+            _interactivity = _bot.Interactivity;
         }
 
-        private async Task DoHelp(DiscordChannel room, string userid, string username, string arguments)
+        [Command("help")]
+        [Aliases("h")]
+        [Description("Get command help")]
+        public async Task DoHelp(CommandContext e)
         {
             var embed = new DiscordEmbed
             {
@@ -106,7 +92,7 @@ namespace MondBot.Master
                     new DiscordEmbedField
                     {
                         Name = "Commands",
-                        Value = "`+run <code>` - run a script\n\n`+func <named fun/seq>` - save a function to the database\n\n`+view <name>` - view the value of a variable or function\n\nThese can also be shortened to single letters, for example `+r` is the same as `+run`."
+                        Value = "`+run <code>` - run a script\n\n`+fun <named fun/seq>` - save a function to the database\n\n`+view <name>` - view the value of a variable or function\n\nThese can also be shortened to single letters, for example `+r` is the same as `+run`."
                     },
                     new DiscordEmbedField
                     {
@@ -116,10 +102,12 @@ namespace MondBot.Master
                 }
             };
 
-            await room.SendMessageAsync("", embed: embed);
+            await e.RespondAsync("", embed: embed);
         }
 
-        private async Task DoInfo(DiscordChannel room, string userid, string username, string arguments)
+        [Command("info")]
+        [Description("Get more information about this bot")]
+        public async Task DoInfo(CommandContext e)
         {
             var embed = new DiscordEmbed
             {
@@ -133,8 +121,13 @@ namespace MondBot.Master
                     },
                     new DiscordEmbedField
                     {
-                        Name = "Uptime",
-                        Value = _uptime.Elapsed.Humanize(3, true, minUnit: TimeUnit.Second)
+                        Name = "Process Uptime",
+                        Value = MasterProgram.Uptime.Elapsed.Humanize(3, true, minUnit: TimeUnit.Second)
+                    },
+                    new DiscordEmbedField
+                    {
+                        Name = "Socket Uptime",
+                        Value = _bot.Uptime.Elapsed.Humanize(3, true, minUnit: TimeUnit.Second)
                     },
                     new DiscordEmbedField
                     {
@@ -149,15 +142,16 @@ namespace MondBot.Master
                 }
             };
 
-            await room.SendMessageAsync("", embed: embed);
+            await e.RespondAsync("", embed: embed);
         }
 
-        private async Task DoRun(DiscordChannel room, string userid, string username, string arguments)
+        [Command("run")]
+        [Aliases("r")]
+        [Description("Run a script")]
+        public async Task DoRun(CommandContext e, [RemainingText] string code)
         {
-            if (string.IsNullOrWhiteSpace(arguments))
-                return;
-
-            var (image, output) = await Common.RunScript(Service, userid, username, arguments);
+            var (userid, username) = ExtractUser(e.User);
+            var (image, output) = await Common.RunScript(Service, userid, username, code);
 
             var description = "Finished with no output.";
             if (!string.IsNullOrWhiteSpace(output))
@@ -168,27 +162,33 @@ namespace MondBot.Master
             if (image != null)
             {
                 var stream = new MemoryStream(image);
-                await room.SendFileAsync(stream, "photo.png", description);
+                await e.RespondWithFileAsync(stream, "photo.png", description);
                 return; // image with output!
             }
 
-            await SendMessage(room, description);
+            await SendMessage(e, description);
         }
 
-        private async Task DoMethod(DiscordChannel room, string userid, string username, string arguments)
+        [Command("fun")]
+        [Aliases("f")]
+        [Description("Save a function")]
+        public async Task DoMethod(CommandContext e, [RemainingText] string code)
         {
-            var (result, isCode) = await Common.AddMethod(Service, userid, username, arguments);
-            await SendMessage(room, result, isCode);
+            var (userid, username) = ExtractUser(e.User);
+            var (result, isCode) = await Common.AddMethod(Service, userid, username, code);
+            await SendMessage(e, result, isCode);
         }
 
-        private async Task DoView(DiscordChannel room, string userid, string username, string arguments)
+        [Command("view")]
+        [Aliases("v")]
+        [Description("View the value of a variable or function")]
+        public async Task DoView(CommandContext e, [RemainingText] string name)
         {
-            var name = arguments.Trim();
-            var data = await Common.ViewVariable(name);
+            var data = await Common.ViewVariable(name.Trim());
 
             if (data == null)
             {
-                await SendMessage(room, $"Variable {CodeField(name)} doesn't exist!");
+                await SendMessage(e, $"Variable {CodeField(name)} doesn't exist!");
                 return;
             }
 
@@ -196,18 +196,20 @@ namespace MondBot.Master
                 $"({page}/{total}) **Variable: {CodeField(name)}**\n";
 
             var pages = _interactivity.GeneratePagesInStrings(data, Header, CodeBlock);
-            await _interactivity.SendPaginatedMessage(room, pages, TimeSpan.FromMinutes(2));
+            await _interactivity.SendPaginatedMessage(e.Channel, e.User, pages, TimeSpan.FromMinutes(2), TimeoutBehaviour.Ignore);
         }
 
-        private static async Task SendMessage(DiscordChannel room, string text, bool isCode = false)
+        private static (string userid, string user) ExtractUser(DiscordUser user) => (user.Id.ToString("G"), user.Username);
+
+        private static async Task SendMessage(CommandContext e, string text, bool isCode = false)
         {
             if (isCode)
             {
-                await room.SendMessageAsync(CodeBlock(text));
+                await e.RespondAsync(CodeBlock(text));
             }
             else
             {
-                await room.SendMessageAsync(text);
+                await e.RespondAsync(text);
             }
         }
 

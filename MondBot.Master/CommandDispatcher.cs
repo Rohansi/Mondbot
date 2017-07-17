@@ -17,7 +17,7 @@ namespace MondBot.Master
 
         public Task Dispatch(string prefix, TRoom room, string userid, string username, string message)
         {
-            if (!message.StartsWith(prefix))
+            if (string.IsNullOrEmpty(message) || !message.StartsWith(prefix))
                 return Task.CompletedTask;
 
             var split = message.Substring(prefix.Length).Split(null, 2);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -12,10 +13,14 @@ namespace MondBot.Master
 {
     public class MasterProgram
     {
+        internal static Stopwatch Uptime { get; private set; }
+
         internal static TelegramBotClient TelegramBot { get; private set; }
 
         public static void Main(string[] args)
         {
+            Uptime = Stopwatch.StartNew();
+
             RunModule.Initialize();
 
 #if !DEBUG
@@ -52,7 +57,7 @@ namespace MondBot.Master
             {
                 host.Start();
                 
-                TelegramBot.SetWebhookAsync("https://toronto.rohbot.net/mondbot/WebHook").Wait();
+                TelegramBot.SetWebhookAsync("https://toronto.rohbot.net/mondbot/telegram").Wait();
 
                 Console.WriteLine("Telegram Started");
 
@@ -82,7 +87,11 @@ namespace MondBot.Master
             {
                 loggerFactory.AddConsole(Configuration.GetSection("Logging"));
 
-                app.UseMvc();
+                app.UseMvc(routes =>
+                {
+                    routes.MapRoute("telegram", "telegram", new { controller = "Telegram" });
+                    //routes.MapRoute("botframework", "botframework", new { controller = "BotFramework" });
+                });
             }
         }
     }

@@ -11,8 +11,8 @@ using Telegram.Bot.Types.Enums;
 
 namespace MondBot.Master
 {
-    [Route("WebHook")]
-    public class WebHookController : Controller
+    [Controller]
+    public sealed class TelegramController : Controller
     {
         private const string Service = "telegram";
 
