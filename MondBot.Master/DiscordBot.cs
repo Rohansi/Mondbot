@@ -47,6 +47,12 @@ namespace MondBot.Master
             
             commands.RegisterCommands<DiscordCommands>();
 
+            commands.CommandErrored += args =>
+            {
+                Console.WriteLine($"Command error: command={args.Command}: {args.Exception}");
+                return Task.CompletedTask;
+            };
+
             Interactivity = _bot.UseInteractivity();
             Uptime = new Stopwatch();
 
@@ -70,12 +76,11 @@ namespace MondBot.Master
         private const string Service = "discord";
 
         private readonly DiscordBot _bot;
-        private readonly InteractivityModule _interactivity;
+        private InteractivityModule Interactivity => _bot.Interactivity;
 
         public DiscordCommands(DiscordBot bot)
         {
             _bot = bot;
-            _interactivity = _bot.Interactivity;
         }
 
         [Command("help")]
@@ -195,8 +200,16 @@ namespace MondBot.Master
             string Header(int page, int total) =>
                 $"({page}/{total}) **Variable: {CodeField(name)}**\n";
 
-            var pages = _interactivity.GeneratePagesInStrings(data, Header, CodeBlock);
-            await _interactivity.SendPaginatedMessage(e.Channel, e.User, pages, TimeSpan.FromMinutes(2), TimeoutBehaviour.Ignore);
+            var pages = Interactivity.GeneratePagesInStrings(data, Header, CodeBlock);
+
+            if (pages.Count == 1)
+            {
+                await SendMessage(e, pages[0].Content);
+            }
+            else
+            {
+                await Interactivity.SendPaginatedMessage(e.Channel, e.User, pages, TimeSpan.FromMinutes(2), TimeoutBehaviour.Ignore);
+            }
         }
 
         private static (string userid, string user) ExtractUser(DiscordUser user) => (user.Id.ToString("G"), user.Username);
