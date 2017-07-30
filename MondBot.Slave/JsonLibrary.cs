@@ -30,6 +30,9 @@ namespace MondBot.Slave
     [MondModule("Json")]
     static partial class JsonModule
     {
+        private const string SerializePrefix = "Json.serialize: ";
+        private const string CantSerializePrefix = SerializePrefix + "can't serialize ";
+
         [MondFunction("serialize")]
         public static string Serialize(MondState state, MondValue value)
         {
@@ -43,10 +46,10 @@ namespace MondBot.Slave
         private static void SerializeImpl(MondState state, MondValue value, StringBuilder sb, int depth)
         {
             if (depth >= 32)
-                throw new MondRuntimeException("Json.serialize: maximum depth exceeded");
+                throw new MondRuntimeException(SerializePrefix + "maximum depth exceeded");
 
             if (sb.Length >= 1 * 1024 * 1024)
-                throw new MondRuntimeException("Json.serialize: maxiumum size exceeded");
+                throw new MondRuntimeException(SerializePrefix + "maximum size exceeded");
 
             var first = true;
 
@@ -69,7 +72,15 @@ namespace MondBot.Slave
                     break;
 
                 case MondValueType.Number:
-                    sb.Append((double)value);
+                    var number = (double)value;
+
+                    if (double.IsNaN(number))
+                        throw new MondRuntimeException(CantSerializePrefix + "NaN");
+
+                    if (double.IsInfinity(number))
+                        throw new MondRuntimeException(CantSerializePrefix + "Infinity");
+
+                    sb.Append(number);
                     break;
 
                 case MondValueType.String:
@@ -128,7 +139,7 @@ namespace MondBot.Slave
                     break;
 
                 default:
-                    throw new MondRuntimeException("Json.serialize: can't serialize {0}s", value.Type.GetName());
+                    throw new MondRuntimeException(CantSerializePrefix + "{0}s", value.Type.GetName());
             }
         }
 

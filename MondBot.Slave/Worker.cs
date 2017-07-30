@@ -119,33 +119,7 @@ namespace MondBot.Slave
                         }
                     }
 
-                    var comparer = new MondValueComparer(_state);
-                    foreach (var kv in _variableCache)
-                    {
-                        var entry = kv.Value;
-                        if (entry.IsMethod)
-                            continue;
-
-                        var serialized = true;
-                        var current = entry.Current;
-
-                        // if the original was serialized we need to serialize current and compare with that
-                        // if current can't serialize, they can never match
-                        if (entry.Serialized)
-                        {
-                            if (!MondUtil.TrySerialize(_state, current, out var currentSerialized))
-                                serialized = false;
-                            else
-                                current = currentSerialized;
-                        }
-
-                        var same = serialized && comparer.Equals(entry.Original, current);
-                        Console.WriteLine("Variable {0} same: {1}", kv.Key, same);
-                        if (same)
-                            continue;
-
-                        StoreVariable(kv.Key, entry.Current);
-                    }
+                    SaveChanges(output);
 
                     _transaction.Commit();
                 }
@@ -154,20 +128,6 @@ namespace MondBot.Slave
             {
                 throw;
             }
-            catch (MondRuntimeException e)
-            {
-                Console.WriteLine(e);
-
-                if (e.InnerException != null)
-                    Console.WriteLine(e.InnerException);
-
-                output.WriteLine(e);
-            }
-            catch (MondCompilerException e)
-            {
-                Console.WriteLine(e);
-                output.WriteLine(e.Message);
-            }
             catch (Exception e)
             {
                 Console.WriteLine(e);
@@ -175,6 +135,45 @@ namespace MondBot.Slave
             }
 
             return new RunResult(_outputBuffer.ToString(), ImageModule.GetImageData());
+        }
+
+        private void SaveChanges(TextWriter output)
+        {
+            var comparer = new MondValueComparer(_state);
+            foreach (var kv in _variableCache)
+            {
+                var entry = kv.Value;
+                if (entry.IsMethod)
+                    continue;
+
+                var serialized = true;
+                var current = entry.Current;
+
+                try
+                {
+                    // if the original was serialized we need to serialize current and compare with that
+                    // if current can't serialize, they can never match
+                    if (entry.Serialized)
+                    {
+                        if (!MondUtil.TrySerialize(_state, current, out var currentSerialized))
+                            serialized = false;
+                        else
+                            current = currentSerialized;
+                    }
+
+                    var same = serialized && comparer.Equals(entry.Original, current);
+                    Console.WriteLine("Variable {0} same: {1}", kv.Key, same);
+                    if (same)
+                        continue;
+
+                    StoreVariable(kv.Key, entry.Current);
+                }
+                catch
+                {
+                    output.WriteLine("Error saving '{0}': ", kv.Key);
+                    throw;
+                }
+            }
         }
 
         private MondValue VariableGetter(MondState state, params MondValue[] args)

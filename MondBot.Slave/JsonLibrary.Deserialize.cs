@@ -11,6 +11,8 @@ namespace MondBot.Slave
 {
     static partial class JsonModule
     {
+        private const string DeserializePrefix = "Json.deserialize: ";
+
         [MondFunction("deserialize")]
         public static MondValue Deserialize(MondState state, string text)
         {
@@ -65,7 +67,7 @@ namespace MondBot.Slave
                         double number;
 
                         if (!double.TryParse(token.Value, out number))
-                            throw new MondRuntimeException("Json.deserialize: invalid number '{0}'", token.Value);
+                            throw new MondRuntimeException(DeserializePrefix + "invalid number '{0}'", token.Value);
 
                         return new MondValue(number);
 
@@ -76,7 +78,7 @@ namespace MondBot.Slave
                         return ParseArray();
 
                     default:
-                        throw new MondRuntimeException("Json.deserialize: expected Value but got {0}", token.Type);
+                        throw new MondRuntimeException(DeserializePrefix + "expected Value but got {0}", token.Type);
                 }
             }
 
@@ -145,7 +147,7 @@ namespace MondBot.Slave
                 var token = Take();
 
                 if (token.Type != type)
-                    throw new MondRuntimeException("Json.deserialize: expected {0} but got {1}", type, token.Type);
+                    throw new MondRuntimeException(DeserializePrefix + "expected {0} but got {1}", type, token.Type);
 
                 return token;
             }
@@ -167,7 +169,7 @@ namespace MondBot.Slave
             private Token Peek(int distance = 0)
             {
                 if (distance < 0)
-                    throw new ArgumentOutOfRangeException("distance", "distance can't be negative");
+                    throw new ArgumentOutOfRangeException(nameof(distance), "distance can't be negative");
 
                 while (_read.Count <= distance)
                 {
@@ -296,7 +298,7 @@ namespace MondBot.Slave
                         while (true)
                         {
                             if (_position >= _text.Length)
-                                throw new MondRuntimeException("Json.deserialize: unterminated string starting at position {0}", stringStart);
+                                throw new MondRuntimeException(DeserializePrefix + "unterminated string starting at position {0}", stringStart);
 
                             ch = _text[_position++];
 
@@ -350,7 +352,8 @@ namespace MondBot.Slave
                                     continue;
 
                                 default:
-                                    throw new MondRuntimeException("Json.deserialize: invalid escape sequence '{0}' at position {1}", ch, _position - 1);
+                                    throw new MondRuntimeException(DeserializePrefix + "invalid escape sequence '{0}' at position {1}",
+                                        ch, _position - 1);
                             }
                         }
 
@@ -470,12 +473,13 @@ namespace MondBot.Slave
 
             private static Exception EndOfString()
             {
-                return new MondRuntimeException("Json.deserialize: unexpected end of string");
+                return new MondRuntimeException(DeserializePrefix + "unexpected end of string");
             }
 
             private Exception UnexpectedChar()
             {
-                return new MondRuntimeException("Json.deserialize: unexpected character '{0}' at position {1}", _text[_position - 1], _position - 1);
+                return new MondRuntimeException(DeserializePrefix + "unexpected character '{0}' at position {1}",
+                    _text[_position - 1], _position - 1);
             }
 
             public void Reset()
@@ -488,10 +492,7 @@ namespace MondBot.Slave
 
             }
 
-            object IEnumerator.Current
-            {
-                get { return Current; }
-            }
+            object IEnumerator.Current => Current;
         }
     }
 }
