@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -9,6 +8,7 @@ using DSharpPlus.Interactivity;
 using Humanizer;
 using Humanizer.Localisation;
 using MondBot.Shared;
+using DSharpPlus.Entities;
 using DSharpPlus.CommandsNext.Attributes;
 
 namespace MondBot.Master
@@ -22,10 +22,9 @@ namespace MondBot.Master
 
         public DiscordBot()
         {
-            var config = new DiscordConfig
+            var config = new DiscordConfiguration
             {
                 AutoReconnect = true,
-                DiscordBranch = Branch.Stable,
                 LargeThreshold = 2000,
                 Token = Settings.Instance.DiscordToken,
                 TokenType = TokenType.Bot,
@@ -88,24 +87,17 @@ namespace MondBot.Master
         [Description("Get command help")]
         public async Task DoHelp(CommandContext e)
         {
-            var embed = new DiscordEmbed
+            var embed = new DiscordEmbedBuilder
             {
                 Description = "I run [Mond](https://github.com/Rohansi/Mond) code for you!",
-                Thumbnail = new DiscordEmbedThumbnail { Url = "http://i.imgur.com/zbqVSaz.png" },
-                Fields = new List<DiscordEmbedField>
-                {
-                    new DiscordEmbedField
-                    {
-                        Name = "Commands",
-                        Value = "`+run <code>` - run a script\n\n`+fun <named fun/seq>` - save a function to the database\n\n`+view <name>` - view the value of a variable or function\n\nThese can also be shortened to single letters, for example `+r` is the same as `+run`."
-                    },
-                    new DiscordEmbedField
-                    {
-                        Name = "Documentation",
-                        Value = "[Language](https://github.com/Rohansi/Mond/wiki)\n[MondBot extras](https://bitbucket.org/rohans/mondbot/src/master/MondHost/Libraries/)"
-                    }
-                }
-            };
+                ThumbnailUrl = "http://i.imgur.com/zbqVSaz.png",
+            }.AddField(
+                "Commands",
+                "`+run <code>` - run a script\n\n`+fun <named fun/seq>` - save a function to the database\n\n`+view <name>` - view the value of a variable or function\n\nThese can also be shortened to single letters, for example `+r` is the same as `+run`."
+            ).AddField(
+                "Documentation",
+                "[Language](https://github.com/Rohansi/Mond/wiki)\n[MondBot extras](https://bitbucket.org/rohans/mondbot/src/master/MondBot.Slave/Libraries/)"
+            ).Build();
 
             await e.RespondAsync("", embed: embed);
         }
@@ -114,38 +106,25 @@ namespace MondBot.Master
         [Description("Get more information about this bot")]
         public async Task DoInfo(CommandContext e)
         {
-            var embed = new DiscordEmbed
+            var embed = new DiscordEmbedBuilder
             {
-                Thumbnail = new DiscordEmbedThumbnail { Url = "http://i.imgur.com/zbqVSaz.png" },
-                Fields = new List<DiscordEmbedField>
-                {
-                    new DiscordEmbedField
-                    {
-                        Name = "Creator",
-                        Value = "<@85484593636970496>"
-                    },
-                    new DiscordEmbedField
-                    {
-                        Name = "Process Uptime",
-                        Value = MasterProgram.Uptime.Elapsed.Humanize(3, true, minUnit: TimeUnit.Second)
-                    },
-                    new DiscordEmbedField
-                    {
-                        Name = "Socket Uptime",
-                        Value = _bot.Uptime.Elapsed.Humanize(3, true, minUnit: TimeUnit.Second)
-                    },
-                    new DiscordEmbedField
-                    {
-                        Name = "Source Code",
-                        Value = "[BitBucket](https://bitbucket.org/rohans/mondbot/)"
-                    },
-                    new DiscordEmbedField
-                    {
-                        Name = "Library",
-                        Value = "[DSharpPlus](https://github.com/NaamloosDT/DSharpPlus/)"
-                    }
-                }
-            };
+                ThumbnailUrl = "http://i.imgur.com/zbqVSaz.png"
+            }.AddField(
+                "Creator",
+                "<@85484593636970496>"
+            ).AddField(
+                "Process Uptime",
+                MasterProgram.Uptime.Elapsed.Humanize(3, true, minUnit: TimeUnit.Second)
+            ).AddField(
+                "Socket Uptime",
+                _bot.Uptime.Elapsed.Humanize(3, true, minUnit: TimeUnit.Second)
+            ).AddField(
+                "Source Code",
+                "[BitBucket](https://bitbucket.org/rohans/mondbot/)"
+            ).AddField(
+                "Library",
+                "[DSharpPlus](https://github.com/NaamloosDT/DSharpPlus/)"
+            );
 
             await e.RespondAsync("", embed: embed);
         }

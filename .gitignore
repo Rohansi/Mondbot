@@ -108,5 +108,6 @@ Backup*/
 UpgradeLog*.XML
 
 *.sln.ide/
-
+.vs/
 *.nupkg
+launchSettings.json

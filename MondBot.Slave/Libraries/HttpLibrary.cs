@@ -65,7 +65,8 @@ namespace MondBot.Slave.Libraries
 
         private static Uri GetUri(string uriString)
         {
-            var uri = new Uri(uriString);
+            if (!Uri.TryCreate(uriString, UriKind.Absolute, out var uri))
+                throw new MondRuntimeException("Http: could not parse URI");
 
             if (uri.Scheme != "http" && uri.Scheme != "https")
                 throw new MondRuntimeException("Http: {0} protocol not supported", uri.Scheme);
