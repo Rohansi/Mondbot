@@ -28,6 +28,7 @@ namespace MondBot.Master
                 LargeThreshold = 2000,
                 Token = Settings.Instance.DiscordToken,
                 TokenType = TokenType.Bot,
+                MessageCacheSize = 0,
                 UseInternalLogHandler = false,
                 LogLevel = LogLevel.Debug
             };

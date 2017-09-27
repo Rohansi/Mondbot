@@ -244,6 +244,7 @@ namespace MondBot.Slave.Libraries
 
             _bitmap = new Bitmap(BitmapWidth, BitmapHeight);
             var graphics = Graphics.FromImage(_bitmap);
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;
             graphics.Clear(Color.White);
             return graphics;
         }
