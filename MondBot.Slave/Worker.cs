@@ -28,16 +28,12 @@ namespace MondBot.Slave
         private Dictionary<string, CacheEntry> _variableCache;
         private HashSet<string> _loadingVariables;
 
-        private MondValue _service;
-        private MondValue _userid;
-        private MondValue _username;
-
         public Worker()
         {
             _outputBuffer = new StringBuilder(MaxOutputChars);
         }
 
-        public RunResult Run(string service, string userid, string username, string source)
+        public RunResult Run(string source)
         {
             _outputBuffer.Clear();
 
@@ -48,10 +44,6 @@ namespace MondBot.Slave
                 using (_connection = Database.CreateConnection())
                 {
                     _transaction = _connection.BeginTransaction();
-
-                    _service = service;
-                    _userid = userid;
-                    _username = username;
 
                     _state = new MondState
                     {
@@ -236,14 +228,7 @@ namespace MondBot.Slave
         {
             value = null;
 
-            if (name == "service")
-                value = _service;
-            else if (name == "userid")
-                value = _userid;
-            else if (name == "username")
-                value =  _username;
-
-            return value != null;
+            return false;
         }
 
         private (MondValue value, bool isMethod) LoadVariable(string name)

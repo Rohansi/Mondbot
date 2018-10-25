@@ -53,7 +53,7 @@ namespace MondBot.Master
             catch { }
         }
 
-        public async Task<RunResult> Run(string service, string userid, string username, string source)
+        public async Task<RunResult> Run(string source)
         {
             Console.WriteLine("Run on {0}", Process.Id);
 
@@ -62,9 +62,6 @@ namespace MondBot.Master
             var receiveStream = new BinaryReader(stream, new UTF8Encoding(false));
 
             // send parameters and source code to run
-            await sendStream.WriteStringAsync(service);
-            await sendStream.WriteStringAsync(userid);
-            await sendStream.WriteStringAsync(username);
             await sendStream.WriteStringAsync(source);
 
 #if !DEBUG

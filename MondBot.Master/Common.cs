@@ -14,7 +14,7 @@ namespace MondBot.Master
             if (string.IsNullOrWhiteSpace(code))
                 return (null, null);
 
-            var result = await RunModule.Run(service, userid, username, code + ";");
+            var result = await RunModule.Run(code + ";");
 
             var image = result.Image;
             if (result.Image != null && result.Image.Length == 0)
@@ -40,7 +40,7 @@ namespace MondBot.Master
             var name = match.Groups["name"].Value;
             var testCode = $"{code};\nreturn {name};";
             
-            var result = (await RunModule.Run(service, userid, username, testCode)).Output.Trim();
+            var result = (await RunModule.Run(testCode)).Output.Trim();
 
             if (result.StartsWith("ERROR:") || result.StartsWith("EXCEPTION:") || result.StartsWith("mondbox"))
                 return (result, true);

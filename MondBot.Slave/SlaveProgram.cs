@@ -36,29 +36,17 @@ namespace MondBot.Slave
 
             var worker = new Worker();
 
-            worker.Run("", "", "", "Image.clear(Color(0, 0, 0));"); // warmup
+            worker.Run("Image.clear(Color(0, 0, 0));"); // warmup
 
             while (true)
             {
                 GC.Collect();
 
-                var service = await receiveStream.ReadStringAsync();
-                if (service == null)
-                    return;
-
-                var userid = await receiveStream.ReadStringAsync();
-                if (userid == null)
-                    return;
-
-                var username = await receiveStream.ReadStringAsync();
-                if (username == null)
-                    return;
-
                 var source = await receiveStream.ReadStringAsync();
                 if (source == null)
                     return;
 
-                var result = worker.Run(service, userid, username, source);
+                var result = worker.Run(source);
 
                 await sendStream.WriteStringAsync(result.Output);
                 await sendStream.WriteBytesAsync(result.Image);

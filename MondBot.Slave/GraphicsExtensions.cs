@@ -1,6 +1,13 @@
-﻿using System;
+﻿extern alias CoreCompatSystemDrawing;
+
+using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
+
+using Brush = CoreCompatSystemDrawing::System.Drawing.Brush;
+using Graphics = CoreCompatSystemDrawing::System.Drawing.Graphics;
+using Pen = CoreCompatSystemDrawing::System.Drawing.Pen;
+
+using CoreCompatSystemDrawing::System.Drawing.Drawing2D;
 
 namespace MondBot.Slave
 {

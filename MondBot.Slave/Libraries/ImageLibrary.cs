@@ -1,13 +1,27 @@
-﻿using System;
+﻿extern alias CoreCompatSystemDrawing;
+
+using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Drawing.Text;
 using System.IO;
 using Mond;
 using Mond.Binding;
 using Mond.Libraries;
+
+using Color = CoreCompatSystemDrawing::System.Drawing.Color;
+using Bitmap = CoreCompatSystemDrawing::System.Drawing.Bitmap;
+using Brush = CoreCompatSystemDrawing::System.Drawing.Brush;
+using Font = CoreCompatSystemDrawing::System.Drawing.Font;
+using FontFamily = CoreCompatSystemDrawing::System.Drawing.FontFamily;
+using FontStyle = CoreCompatSystemDrawing::System.Drawing.FontStyle;
+using Graphics = CoreCompatSystemDrawing::System.Drawing.Graphics;
+using GraphicsUnit = CoreCompatSystemDrawing::System.Drawing.GraphicsUnit;
+using Pen = CoreCompatSystemDrawing::System.Drawing.Pen;
+using SolidBrush = CoreCompatSystemDrawing::System.Drawing.SolidBrush;
+
+using CoreCompatSystemDrawing::System.Drawing.Drawing2D;
+using CoreCompatSystemDrawing::System.Drawing.Imaging;
+using CoreCompatSystemDrawing::System.Drawing.Text;
 
 namespace MondBot.Slave.Libraries
 {

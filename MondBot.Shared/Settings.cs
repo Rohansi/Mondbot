@@ -18,19 +18,6 @@ namespace MondBot.Shared
                 return _instance;
             }
         }
-
-        [JsonProperty(Required = Required.Always)]
-        public string Token { get; set; }
-
-        [JsonProperty(Required = Required.Always)]
-        public string DiscordToken { get; set; }
-
-        [JsonProperty(Required = Required.Always)]
-        public string RohBotUsername { get; set; }
-
-        [JsonProperty(Required = Required.Always)]
-        public string RohBotPassword { get; set; }
-
         [JsonProperty(Required = Required.Always)]
         public string DbAddress { get; set; }
 
