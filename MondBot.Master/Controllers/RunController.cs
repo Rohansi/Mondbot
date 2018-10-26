@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using MondBot.Master.Models;
 
 namespace MondBot.Master.Controllers
 {
@@ -6,10 +9,16 @@ namespace MondBot.Master.Controllers
     [ApiController]
     public class RunController
     {
-        [HttpGet]
-        public ActionResult<string> Get()
+        [HttpPost]
+        public async Task<ActionResult<RunCodeResponse>> Get([FromBody] RunCodeRequest request)
         {
-            return "hello";
+            var (imageData, output) = await Common.RunScript(request.Code);
+
+            return new RunCodeResponse
+            {
+                Output = output,
+                Image = imageData != null ? Convert.ToBase64String(imageData) : null,
+            };
         }
     }
 }

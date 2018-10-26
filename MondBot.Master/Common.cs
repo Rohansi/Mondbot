@@ -7,7 +7,7 @@ namespace MondBot.Master
 {
     internal static class Common
     {
-        public static async Task<(byte[] image, string result)> RunScript(string service, string userid, string username, string code)
+        public static async Task<(byte[] image, string result)> RunScript(string code)
         {
             code = CleanupCode(code);
 
@@ -29,7 +29,7 @@ namespace MondBot.Master
             @"(?:^(?:\@[\w\.]+(?:\((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!))\))?\s+)+|^)(?:fun|seq)(?:\s+(?<name>\w+)|\s*(?<name>\([\.\=\+\-\*\/\%\&\|\^\~\<\>\!\?\@\#\$\\]+\)))\s*\(",
             RegexOptions.Singleline);
 
-        public static async Task<(string result, bool isCode)> AddMethod(string service, string userid, string username, string arguments)
+        public static async Task<(string result, bool isCode)> AddMethod(string arguments)
         {
             var code = CleanupCode(arguments);
 
@@ -92,7 +92,7 @@ namespace MondBot.Master
 
         private static string CleanupCode(string code)
         {
-            return code.Replace("\r\n", "\n").Replace('\r', '\n').Trim().Trim('`').Trim();
+            return code.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
         }
     }
 }
