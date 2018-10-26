@@ -37,6 +37,8 @@ namespace MondBot.Master
 
             public void ConfigureServices(IServiceCollection services)
             {
+                services.AddCors();
+
                 services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             }
 
@@ -48,6 +50,11 @@ namespace MondBot.Master
                 {
                     app.UseDeveloperExceptionPage();
                 }
+
+                app.UseCors(options =>
+                {
+                    options.WithOrigins("rohbot.net").AllowAnyMethod();
+                });
 
                 app.UseMvc();
             }
