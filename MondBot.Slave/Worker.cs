@@ -62,6 +62,7 @@ namespace MondBot.Slave
                             //new RantLibraries(),
                             new RegexLibraries(),
                             new DateTimeLibraries(),
+                            new AsyncLibraries(),
                         }
                     };
 
