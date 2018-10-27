@@ -33,6 +33,17 @@ namespace MondBot.Slave.Libraries
             return client.GetStringAsync(uri).Result;
         }
 
+        [MondFunction("getAsync")]
+        public static MondValue GetAsync(string address)
+        {
+            AsyncUtil.EnsureAsync();
+            
+            var uri = GetUri(address);
+            var client = GetHttpClient();
+
+            return AsyncUtil.ToObject(client.GetStringAsync(uri).ContinueWith(t => (MondValue)t.Result));
+        }
+
         [MondFunction("post")]
         public static string Post(string address, MondValue formData)
         {

@@ -37,6 +37,7 @@ namespace MondBot.Slave.Libraries
             yield return new CharLibrary(state);
             yield return new MathLibrary(state);
             yield return new BetterRandomLibrary(state);
+            yield return new OperatorLibrary(state);
         }
     }
 
