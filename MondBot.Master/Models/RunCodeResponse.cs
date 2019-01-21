@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MondBot.Master.Models
+﻿namespace MondBot.Master.Models
 {
     public class RunCodeResponse
     {

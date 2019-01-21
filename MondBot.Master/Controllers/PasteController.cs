@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using MondBot.Master.Models;
 
 namespace MondBot.Master.Controllers
 {
@@ -38,9 +39,9 @@ namespace MondBot.Master.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] string content)
+        public async Task<IActionResult> Post([FromBody] PasteRequest paste)
         {
-            return Content(await Store(content));
+            return Content(await Store(paste.Content));
         }
 
         private async Task<string> Load(string hash)

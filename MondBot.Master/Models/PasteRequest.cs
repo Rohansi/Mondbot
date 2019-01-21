@@ -2,9 +2,9 @@
 
 namespace MondBot.Master.Models
 {
-    public class RunCodeRequest
+    public class PasteRequest
     {
         [Required]
-        public string Code { get; set; }
+        public string Content { get; set; }
     }
 }
