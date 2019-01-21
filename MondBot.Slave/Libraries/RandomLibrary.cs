@@ -33,6 +33,7 @@ namespace MondBot.Slave.Libraries
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
+            yield return new RequireLibrary(state);
             yield return new ErrorLibrary(state);
             yield return new CharLibrary(state);
             yield return new MathLibrary(state);

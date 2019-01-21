@@ -18,6 +18,10 @@
   <ItemGroup>
     <ProjectReference Include="..\MondBot.Shared\MondBot.Shared.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Modules\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
   
   <Target Name="ChangeAliasesOfNugetRefs" BeforeTargets="FindReferenceAssembliesForReferences;ResolveReferences">
     <ItemGroup>

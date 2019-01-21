@@ -59,15 +59,46 @@ namespace MondBot.Slave
                             new ModifiedJsonLibraries(),
                             new HttpLibraries(),
                             new ImageLibraries(),
-                            //new RantLibraries(),
                             new RegexLibraries(),
                             new DateTimeLibraries(),
                             new AsyncLibraries(),
                         }
                     };
 
+                    var searchDir = Path.Combine(typeof(Worker).Assembly.Location, "Modules");
+
+                    var requireWhitelist = new HashSet<string>
+                    {
+                        "Seq.mnd",
+                        "Seq.Scalar.mnd",
+                        "Seq.Sorting.mnd",
+                    };
+
                     _state.Libraries.Configure(libs =>
                     {
+                        var require = libs.Get<RequireLibrary>();
+                        if (require != null)
+                        {
+                            require.Options = _state.Options;
+                            require.SearchBesideScript = false;
+                            require.Loader = (name, directories) =>
+                            {
+                                string foundModule = null;
+
+                                if (requireWhitelist.Contains(name))
+                                {
+                                    var modulePath = Path.Combine(searchDir, name);
+                                    if (File.Exists(modulePath))
+                                        foundModule = modulePath;
+                                }
+
+                                if (foundModule == null)
+                                    throw new MondRuntimeException("require: module could not be found: {0}", name);
+                                
+                                return File.ReadAllText(foundModule);
+                            };
+                        }
+
                         var consoleOut = libs.Get<ConsoleOutputLibrary>();
                         consoleOut.Out = output;
                     });
