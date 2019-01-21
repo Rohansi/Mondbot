@@ -7,7 +7,7 @@ namespace MondBot.Master.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RunController
+    public class RunController : ControllerBase
     {
         [HttpPost]
         public async Task<ActionResult<RunCodeResponse>> Get([FromBody] RunCodeRequest request)
