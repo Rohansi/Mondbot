@@ -65,6 +65,11 @@ namespace MondBot.Slave
                         }
                     };
 
+                    // eagerly initialize module cache (so it doesn't try to load from DB)
+                    var moduleCache = new MondValue(_state);
+                    moduleCache.Prototype = MondValue.Null;
+                    _state["__modules"] = moduleCache;
+
                     var searchDir = Path.Combine(typeof(Worker).Assembly.Location, "Modules");
 
                     var requireWhitelist = new HashSet<string>
