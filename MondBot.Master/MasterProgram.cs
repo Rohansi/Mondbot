@@ -53,7 +53,7 @@ namespace MondBot.Master
 
                 app.UseCors(options =>
                 {
-                    options.WithOrigins("rohbot.net")
+                    options.WithOrigins("https://rohbot.net")
                         .AllowAnyMethod()
                         .AllowAnyHeader();
                 });
