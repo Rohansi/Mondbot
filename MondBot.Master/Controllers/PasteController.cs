@@ -29,7 +29,6 @@ namespace MondBot.Master.Controllers
         {
             _hostingEnvironment = hostingEnvironment;
             _baseDirectory = Path.Combine(Directory.GetCurrentDirectory(), PasteDirectory);
-            Console.WriteLine($"Pastes stored in: {Path.GetFullPath(_baseDirectory)}");
         }
 
         [HttpGet("{hash}")]
