@@ -70,7 +70,7 @@ namespace MondBot.Slave
                     moduleCache.Prototype = MondValue.Null;
                     _state["__modules"] = moduleCache;
 
-                    var searchDir = Path.Combine(typeof(Worker).Assembly.Location, "Modules");
+                    var searchDir = Path.Combine(Environment.CurrentDirectory, "Modules");
 
                     var requireWhitelist = new HashSet<string>
                     {

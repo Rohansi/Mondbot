@@ -29,7 +29,7 @@ namespace MondBot.Master.Controllers
         public PasteController(IHostingEnvironment hostingEnvironment)
         {
             _hostingEnvironment = hostingEnvironment;
-            _baseDirectory = Path.Combine(Directory.GetCurrentDirectory(), PasteDirectory);
+            _baseDirectory = Path.Combine(Environment.CurrentDirectory, PasteDirectory);
         }
 
         [HttpGet("{hash}")]
