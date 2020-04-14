@@ -23,8 +23,8 @@ namespace MondBot.Slave
             if (x.Type == MondValueType.Array)
             {
                 return y.Type == MondValueType.Array &&
-                       x.Array.Count == y.Array.Count &&
-                       x.Array.SequenceEqual(y.Array, this);
+                       x.AsList.Count == y.AsList.Count &&
+                       x.AsList.SequenceEqual(y.AsList, this);
             }
 
             if (x.Type == MondValueType.Object)
@@ -40,8 +40,8 @@ namespace MondBot.Slave
 
                 if (!xSerialize && !ySerialize)
                 {
-                    return x.Object.Count == y.Object.Count &&
-                           !x.Object.Except(y.Object, new MondValueObjectComparer(this)).Any();
+                    return x.AsDictionary.Count == y.AsDictionary.Count &&
+                           !x.AsDictionary.Except(y.AsDictionary, new MondValueObjectComparer(this)).Any();
                 }
 
                 return false; // hidden state possible, must save?

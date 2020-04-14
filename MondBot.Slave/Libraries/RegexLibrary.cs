@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Mond;
 using Mond.Binding;
@@ -36,17 +37,10 @@ namespace MondBot.Slave.Libraries
         [MondFunction("__serialize")]
         public MondValue Serialize(MondState state, params MondValue[] args)
         {
-            return new MondValue(state)
-            {
-                ["$ctor"] = "Regex",
-                ["$args"] = new MondValue(MondValueType.Array)
-                {
-                    Array =
-                    {
-                        _pattern, _ignoreCase, _multiline
-                    }
-                }
-            };
+            var result = MondValue.Object(state);
+            result["$ctor"] = "Regex";
+            result["$args"] = MondValue.Array(new MondValue[] { _pattern, _ignoreCase, _multiline });
+            return result;
         }
 
         [MondFunction("isMatch")]
@@ -72,24 +66,16 @@ namespace MondBot.Slave.Libraries
         public MondValue Split(string input, int count = -1, int startat = 0)
         {
             var items = _regex.Split(input, count, startat);
-
-            var value = new MondValue(MondValueType.Array);
-
-            foreach (var s in items)
-            {
-                value.Array.Add(s);
-            }
-
-            return value;
+            return MondValue.Array(items.Select(MondValue.String));
         }
 
         private static MondValue ToMond(MatchCollection matchCollection)
         {
-            var value = new MondValue(MondValueType.Array);
+            var value = MondValue.Array();
 
             foreach (Match m in matchCollection)
             {
-                value.Array.Add(ToMond(m));
+                value.AsList.Add(ToMond(m));
             }
 
             return value;
@@ -97,13 +83,12 @@ namespace MondBot.Slave.Libraries
 
         private static MondValue ToMond(Match match)
         {
-            return new MondValue(MondValueType.Object)
-            {
-                ["index"] = match.Index,
-                ["length"] = match.Length,
-                ["success"] = match.Success,
-                ["value"] = match.Value
-            };
+            var result = MondValue.Object();
+            result["index"] = match.Index;
+            result["length"] = match.Length;
+            result["success"] = match.Success;
+            result["value"] = match.Value;
+            return result;
         }
     }
 

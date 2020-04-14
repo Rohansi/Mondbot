@@ -106,17 +106,10 @@ namespace MondBot.Slave.Libraries
         [MondFunction("__serialize")]
         public MondValue Serialize(MondState state, params MondValue[] args)
         {
-            return new MondValue(state)
-            {
-                ["$ctor"] = "DateTime",
-                ["$args"] = new MondValue(MondValueType.Array)
-                {
-                    Array =
-                    {
-                        _value.ToInstant().ToUnixTimeSeconds(), _value.Zone.Id
-                    }
-                }
-            };
+            var result = MondValue.Object(state);
+            result["$ctor"] = "DateTime";
+            result["$args"] = MondValue.Array(new MondValue[] { _value.ToInstant().ToUnixTimeSeconds(), _value.Zone.Id });
+            return result;
         }
     }
 

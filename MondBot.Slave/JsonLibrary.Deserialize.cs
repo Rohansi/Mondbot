@@ -61,7 +61,7 @@ namespace MondBot.Slave
                         return MondValue.Undefined;
 
                     case TokenType.String:
-                        return new MondValue(token.Value);
+                        return MondValue.String(token.Value);
 
                     case TokenType.Number:
                         double number;
@@ -69,7 +69,7 @@ namespace MondBot.Slave
                         if (!double.TryParse(token.Value, out number))
                             throw new MondRuntimeException(DeserializePrefix + "invalid number '{0}'", token.Value);
 
-                        return new MondValue(number);
+                        return MondValue.Number(number);
 
                     case TokenType.ObjectStart:
                         return ParseObject();
@@ -84,7 +84,7 @@ namespace MondBot.Slave
 
             private MondValue ParseObject()
             {
-                var obj = new MondValue(MondValueType.Object);
+                var obj = MondValue.Object();
                 var first = true;
 
                 while (!Match(TokenType.ObjectEnd))
@@ -112,7 +112,7 @@ namespace MondBot.Slave
                     if (ctor.Type == MondValueType.Function || (ctor.Type == MondValueType.Object && (bool)ctor["__call"]))
                     {
                         var ctorArgs = obj["$args"];
-                        var args = ctorArgs.Type == MondValueType.Array ? ctorArgs.Array : new MondValue[0];
+                        var args = ctorArgs.Type == MondValueType.Array ? ctorArgs.AsList : new MondValue[0];
                         obj = _state.Call(ctor, args.ToArray());
                     }
                 }
@@ -122,7 +122,7 @@ namespace MondBot.Slave
 
             private MondValue ParseArray()
             {
-                var arr = new MondValue(MondValueType.Array);
+                var arr = MondValue.Array();
 
                 if (Match(TokenType.ArrayEnd))
                 {
@@ -130,12 +130,12 @@ namespace MondBot.Slave
                     return arr;
                 }
 
-                arr.Array.Add(ParseValue());
+                arr.AsList.Add(ParseValue());
 
                 while (!Match(TokenType.ArrayEnd))
                 {
                     Require(TokenType.Comma);
-                    arr.Array.Add(ParseValue());
+                    arr.AsList.Add(ParseValue());
                 }
 
                 Require(TokenType.ArrayEnd);

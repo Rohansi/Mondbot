@@ -53,7 +53,7 @@ namespace MondBot.Slave.Libraries
             var uri = GetUri(address);
             var client = GetHttpClient();
 
-            var data = formData.Object
+            var data = formData.AsDictionary
                 .Select(kv => new KeyValuePair<string, string>(kv.Key, kv.Value));
 
             var response = client.PostAsync(uri, new FormUrlEncodedContent(data)).Result;

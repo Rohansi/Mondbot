@@ -54,11 +54,11 @@ namespace MondBot.Slave
             switch (value.Type)
             {
                 case MondValueType.Object:
-                    clone = new MondValue(state);
+                    clone = MondValue.Object(state);
 
-                    foreach (var kv in value.Object)
+                    foreach (var kv in value.AsDictionary)
                     {
-                        clone.Object.Add(Clone(state, kv.Key), Clone(state, kv.Value));
+                        clone.AsDictionary.Add(Clone(state, kv.Key), Clone(state, kv.Value));
                     }
 
                     clone.UserData = value.UserData;
@@ -71,11 +71,11 @@ namespace MondBot.Slave
                     return clone;
 
                 case MondValueType.Array:
-                    clone = new MondValue(MondValueType.Array);
+                    clone = MondValue.Array();
 
-                    foreach (var v in value.Array)
+                    foreach (var v in value.AsList)
                     {
-                        clone.Array.Add(Clone(state, v));
+                        clone.AsList.Add(Clone(state, v));
                     }
 
                     return clone;

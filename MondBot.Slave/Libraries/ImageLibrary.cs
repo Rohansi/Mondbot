@@ -51,17 +51,10 @@ namespace MondBot.Slave.Libraries
         [MondFunction("__serialize")]
         public MondValue Serialize(MondState state, params MondValue[] args)
         {
-            return new MondValue(state)
-            {
-                ["$ctor"] = "Color",
-                ["$args"] = new MondValue(MondValueType.Array)
-                {
-                    Array =
-                    {
-                        Red, Green, Blue, Alpha
-                    }
-                }
-            };
+            var result = MondValue.Object(state);
+            result["$ctor"] = "Color";
+            result["$args"] = MondValue.Array(new MondValue[] { Red, Green, Blue, Alpha });
+            return result;
         }
     }
 
@@ -152,7 +145,7 @@ namespace MondBot.Slave.Libraries
         public static MondValue MeasureString(string str, int size = 32)
         {
             var dimensions = Graphics.MeasureString(str, GetFont(size));
-            return new MondValue(MondValueType.Array) { Array = { dimensions.Width, dimensions.Height } };
+            return MondValue.Array(new MondValue[] { dimensions.Width, dimensions.Height });
         }
 
         #region Helpers

@@ -66,7 +66,7 @@ namespace MondBot.Slave
                     };
 
                     // eagerly initialize module cache (so it doesn't try to load from DB)
-                    var moduleCache = new MondValue(_state);
+                    var moduleCache = MondValue.Object(_state);
                     moduleCache.Prototype = MondValue.Null;
                     _state["__modules"] = moduleCache;
 
@@ -116,13 +116,11 @@ namespace MondBot.Slave
                     _variableCache = new Dictionary<string, CacheEntry>();
                     _loadingVariables = new HashSet<string>();
 
-                    _state["__ops"] = new MondValue(_state)
-                    {
-                        ["__get"] = new MondValue(VariableGetterOldOperator)
-                    };
+                    _state["__ops"] = MondValue.Object(_state);
+                    _state["__ops"]["__get"] = MondValue.Function(VariableGetterOldOperator);
 
-                    _state["__get"] = new MondValue(VariableGetter);
-                    _state["__set"] = new MondValue(VariableSetter);
+                    _state["__get"] = MondValue.Function(VariableGetter);
+                    _state["__set"] = MondValue.Function(VariableSetter);
 
                     var program = source;
 
