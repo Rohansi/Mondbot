@@ -14,12 +14,6 @@ namespace MondBot.Slave
 
         public bool Equals(MondValue x, MondValue y)
         {
-            if (ReferenceEquals(x, y))
-                return true;
-
-            if (ReferenceEquals(x, null) || ReferenceEquals(y, null))
-                return false;
-
             if (x.Type == MondValueType.Array)
             {
                 return y.Type == MondValueType.Array &&

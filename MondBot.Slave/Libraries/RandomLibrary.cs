@@ -33,27 +33,20 @@ namespace MondBot.Slave.Libraries
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new RequireLibrary(state);
-            yield return new ErrorLibrary(state);
-            yield return new CharLibrary(state);
-            yield return new MathLibrary(state);
-            yield return new BetterRandomLibrary(state);
-            yield return new OperatorLibrary(state);
+            yield return new RequireLibrary();
+            yield return new ErrorLibrary();
+            yield return new CharLibrary();
+            yield return new MathLibrary();
+            yield return new BetterRandomLibrary();
+            yield return new OperatorLibrary();
         }
     }
 
     class BetterRandomLibrary : IMondLibrary
     {
-        private readonly MondState _state;
-
-        public BetterRandomLibrary(MondState state)
+        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions(MondState state)
         {
-            _state = state;
-        }
-
-        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
-        {
-            var randomModule = MondModuleBinder.Bind(typeof(BetterRandomModule), _state);
+            var randomModule = MondModuleBinder.Bind(typeof(BetterRandomModule), state);
             yield return new KeyValuePair<string, MondValue>("Random", randomModule);
         }
     }

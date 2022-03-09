@@ -10,19 +10,15 @@ namespace MondBot.Slave
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new ModifiedJsonLibrary(state);
+            yield return new ModifiedJsonLibrary();
         }
     }
 
     class ModifiedJsonLibrary : IMondLibrary
     {
-        private readonly MondState _state;
-
-        public ModifiedJsonLibrary(MondState state) => _state = state;
-
-        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
+        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions(MondState state)
         {
-            var jsonModule = MondModuleBinder.Bind(typeof(JsonModule), _state);
+            var jsonModule = MondModuleBinder.Bind(typeof(JsonModule), state);
             yield return new KeyValuePair<string, MondValue>("Json", jsonModule);
         }
     }

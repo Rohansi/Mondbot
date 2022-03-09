@@ -96,22 +96,15 @@ namespace MondBot.Slave.Libraries
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new RegexLibrary(state);
+            yield return new RegexLibrary();
         }
     }
 
     class RegexLibrary : IMondLibrary
     {
-        public MondState State { get; }
-
-        public RegexLibrary(MondState state)
+        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions(MondState state)
         {
-            State = state;
-        }
-
-        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
-        {
-            var regexClass = MondClassBinder.Bind<RegexClass>(State);
+            var regexClass = MondClassBinder.Bind<RegexClass>(state);
             yield return new KeyValuePair<string, MondValue>("Regex", regexClass);
         }
     }

@@ -192,20 +192,16 @@ namespace MondBot.Slave.Libraries
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new DateTimeLibrary(state);
+            yield return new DateTimeLibrary();
         }
     }
 
     class DateTimeLibrary : IMondLibrary
     {
-        private readonly MondState _state;
-
-        public DateTimeLibrary(MondState state) => _state = state;
-
-        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
+        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions(MondState state)
         {
-            var module = MondModuleBinder.Bind(typeof(DateTimeModule), _state);
-            MondClassBinder.Bind<DateTimeClass>(_state);
+            var module = MondModuleBinder.Bind(typeof(DateTimeModule), state);
+            MondClassBinder.Bind<DateTimeClass>(state);
             yield return new KeyValuePair<string, MondValue>("DateTime", module);
         }
     }

@@ -47,7 +47,7 @@ namespace MondBot.Slave.Libraries
         [MondFunction("post")]
         public static string Post(string address, MondValue formData)
         {
-            if (formData == null || formData.Type != MondValueType.Object)
+            if (formData.Type != MondValueType.Object)
                 throw new MondRuntimeException("Http.post: formData must be an object");
 
             var uri = GetUri(address);
@@ -63,7 +63,7 @@ namespace MondBot.Slave.Libraries
         [MondFunction("postJson")]
         public static string PostJson(MondState state, string address, MondValue obj)
         {
-            if (obj == null || obj.Type != MondValueType.Object)
+            if (obj.Type != MondValueType.Object)
                 throw new MondRuntimeException("Http.postJson: obj must be an object");
 
             var uri = GetUri(address);
@@ -105,19 +105,15 @@ namespace MondBot.Slave.Libraries
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new HttpLibrary(state);
+            yield return new HttpLibrary();
         }
     }
 
     class HttpLibrary : IMondLibrary
     {
-        private readonly MondState _state;
-
-        public HttpLibrary(MondState state) => _state = state;
-
-        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
+        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions(MondState state)
         {
-            var httpModule = MondModuleBinder.Bind(typeof(HttpModule), _state);
+            var httpModule = MondModuleBinder.Bind(typeof(HttpModule), state);
             yield return new KeyValuePair<string, MondValue>("Http", httpModule);
         }
     }

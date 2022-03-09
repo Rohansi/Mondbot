@@ -86,7 +86,7 @@ namespace MondBot.Slave
                         {
                             require.Options = _state.Options;
                             require.SearchBesideScript = false;
-                            require.Loader = (name, directories) =>
+                            require.Resolver = (name, directories) =>
                             {
                                 string foundModule = null;
 
@@ -99,8 +99,8 @@ namespace MondBot.Slave
 
                                 if (foundModule == null)
                                     throw new MondRuntimeException("require: module could not be found: {0}", name);
-                                
-                                return File.ReadAllText(foundModule);
+
+                                return foundModule;
                             };
                         }
 
@@ -116,8 +116,9 @@ namespace MondBot.Slave
                     _variableCache = new Dictionary<string, CacheEntry>();
                     _loadingVariables = new HashSet<string>();
 
-                    _state["__ops"] = MondValue.Object(_state);
-                    _state["__ops"]["__get"] = MondValue.Function(VariableGetterOldOperator);
+                    var ops = MondValue.Object(_state);
+                    ops["__get"] = MondValue.Function(VariableGetterOldOperator);
+                    _state["__ops"] = ops;
 
                     _state["__get"] = MondValue.Function(VariableGetter);
                     _state["__set"] = MondValue.Function(VariableSetter);
@@ -188,7 +189,7 @@ namespace MondBot.Slave
                             current = currentSerialized;
                     }
 
-                    var same = serialized && comparer.Equals(entry.Original, current);
+                    var same = serialized && entry.Original != null && comparer.Equals(entry.Original.Value, current);
                     Console.WriteLine("Variable {0} same: {1}", kv.Key, same);
                     if (same)
                         continue;
@@ -228,8 +229,8 @@ namespace MondBot.Slave
                 if (value == null)
                     throw new MondRuntimeException($"Undefined variable '{name}'");
 
-                _variableCache.Add(name, new CacheEntry(_state, isMethod, value, value));
-                return value;
+                _variableCache.Add(name, new CacheEntry(_state, isMethod, value.Value, value.Value));
+                return value.Value;
             }
             finally
             {
@@ -261,12 +262,11 @@ namespace MondBot.Slave
 
         private bool TryGetBuiltin(string name, out MondValue value)
         {
-            value = null;
-
+            value = MondValue.Undefined;
             return false;
         }
 
-        private (MondValue value, bool isMethod) LoadVariable(string name)
+        private (MondValue? value, bool isMethod) LoadVariable(string name)
         {
             VariableType type;
             string data;

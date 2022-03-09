@@ -12,7 +12,7 @@ namespace MondBot.Slave
 
             if (!canSerialize)
             {
-                serialized = null;
+                serialized = MondValue.Undefined;
                 return false;
             }
 

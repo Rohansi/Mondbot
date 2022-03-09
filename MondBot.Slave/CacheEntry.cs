@@ -9,7 +9,7 @@ namespace MondBot.Slave
 
         public bool IsMethod { get; private set; }
 
-        public MondValue Original { get; }
+        public MondValue? Original { get; }
         public bool Serialized { get; }
 
         public MondValue Current
@@ -22,20 +22,17 @@ namespace MondBot.Slave
             }
         }
 
-        public CacheEntry(MondState state, bool isMethod, MondValue original, MondValue value)
+        public CacheEntry(MondState state, bool isMethod, MondValue? original, MondValue value)
         {
             if (state == null)
                 throw new ArgumentNullException(nameof(state));
 
-            if (ReferenceEquals(value, null))
-                throw new ArgumentNullException(nameof(value));
-
             _current = value;
             IsMethod = isMethod;
 
-            if (!ReferenceEquals(original, null))
+            if (original != null)
             {
-                if (MondUtil.TrySerialize(state, original, out var serialized))
+                if (MondUtil.TrySerialize(state, original.Value, out var serialized))
                 {
                     Original = serialized;
                     Serialized = true;

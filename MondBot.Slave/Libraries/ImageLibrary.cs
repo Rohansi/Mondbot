@@ -290,25 +290,18 @@ namespace MondBot.Slave.Libraries
     {
         public IEnumerable<IMondLibrary> Create(MondState state)
         {
-            yield return new ImageLibrary(state);
+            yield return new ImageLibrary();
         }
     }
 
     class ImageLibrary : IMondLibrary
     {
-        private MondState State { get; }
-
-        public ImageLibrary(MondState state)
+        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions(MondState state)
         {
-            State = state;
-        }
-
-        public IEnumerable<KeyValuePair<string, MondValue>> GetDefinitions()
-        {
-            var colorClass = MondClassBinder.Bind<MondColor>(State);
+            var colorClass = MondClassBinder.Bind<MondColor>(state);
             yield return new KeyValuePair<string, MondValue>("Color", colorClass);
 
-            var imageModule = MondModuleBinder.Bind(typeof(ImageModule), State);
+            var imageModule = MondModuleBinder.Bind(typeof(ImageModule), state);
             yield return new KeyValuePair<string, MondValue>("Image", imageModule);
         }
     }
