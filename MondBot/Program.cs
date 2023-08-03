@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using MondBot.Master;
 using MondBot.Slave;
 
@@ -5,15 +6,15 @@ namespace MondBot
 {
     public static class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             if (args.Length == 0)
             {
-                MasterProgram.Main(args);
+                await MasterProgram.Main(args);
                 return;
             }
 
-            SlaveProgram.Main(args);
+            await SlaveProgram.Main(args);
         }
     }
 }

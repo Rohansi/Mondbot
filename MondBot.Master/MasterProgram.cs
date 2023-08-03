@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace MondBot.Master
@@ -13,13 +14,13 @@ namespace MondBot.Master
     {
         internal static Stopwatch Uptime { get; private set; }
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             Uptime = Stopwatch.StartNew();
 
             RunModule.Initialize();
 
-            CreateWebHostBuilder(args).Build().Run();
+            await CreateWebHostBuilder(args).Build().RunAsync();
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
@@ -38,14 +39,11 @@ namespace MondBot.Master
             public void ConfigureServices(IServiceCollection services)
             {
                 services.AddCors();
-
-                services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+                services.AddMvc();
             }
 
-            public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+            public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
             {
-                loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-
                 if (env.IsDevelopment())
                 {
                     app.UseDeveloperExceptionPage();

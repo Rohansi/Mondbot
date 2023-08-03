@@ -11,12 +11,7 @@ namespace MondBot.Slave
 {
     public class SlaveProgram
     {
-        public static void Main(string[] args)
-        {
-            AsyncMain().Wait();
-        }
-
-        static async Task AsyncMain()
+        public static async Task Main(string[] args)
         {
             var socket = new TcpClient();
             socket.NoDelay = true;

@@ -23,10 +23,10 @@ namespace MondBot.Master.Controllers
             'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F'
         }; 
 
-        private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly string _baseDirectory;
 
-        public PasteController(IHostingEnvironment hostingEnvironment)
+        public PasteController(IWebHostEnvironment hostingEnvironment)
         {
             _hostingEnvironment = hostingEnvironment;
             _baseDirectory = Path.Combine(Environment.CurrentDirectory, PasteDirectory);
