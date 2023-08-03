@@ -39,7 +39,8 @@ namespace MondBot.Master
             public void ConfigureServices(IServiceCollection services)
             {
                 services.AddCors();
-                services.AddMvc();
+                services.AddRouting();
+                services.AddControllers();
             }
 
             public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
@@ -49,6 +50,8 @@ namespace MondBot.Master
                     app.UseDeveloperExceptionPage();
                 }
 
+                app.UseRouting();
+
                 app.UseCors(options =>
                 {
                     options.WithOrigins("https://rohbot.net")
@@ -56,7 +59,12 @@ namespace MondBot.Master
                         .AllowAnyHeader();
                 });
 
-                app.UseMvc();
+                app.UseEndpoints(endpoints =>
+                {
+                    endpoints.MapControllerRoute(
+                        name: "default",
+                        pattern: "{controller=Home}/{action=Index}/{id?}");
+                });
             }
         }
     }
