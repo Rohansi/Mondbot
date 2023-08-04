@@ -110,7 +110,7 @@ namespace MondBot.Slave
 
                     _state.EnsureLibrariesLoaded();
 
-                    var global = _state.Run("return global;");
+                    var global = _state.Global;
                     global.Prototype = MondValue.Null;
 
                     _variableCache = new Dictionary<string, CacheEntry>();
