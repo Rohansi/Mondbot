@@ -159,7 +159,9 @@ namespace MondBot.Master
                 {
                     SpawnLimiter("cpulimit", "-z -l 50 -p {0:G}", process, false);
                     SpawnLimiter("prlimit", "--as=4294967296 --pid {0:G}", process, true);
-                    SpawnLimiter("cgclassify", "-g memory:mondbot/slave {0:G}", process, true);
+
+                    var baseCgroup = Environment.GetEnvironmentVariable("MOND_CGROUP_BASE");
+                    SpawnLimiter("cgclassify", $"-g memory:{baseCgroup}/mondbot-slave {{0:G}}", process, true);
                 }
 
                 // kill the new process if its not added to _workers in a few seconds
