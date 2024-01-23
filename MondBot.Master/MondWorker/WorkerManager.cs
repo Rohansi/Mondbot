@@ -16,7 +16,7 @@ namespace MondBot.Master
     class WorkerManager : IDisposable
     {
         public const int MaxWorkerProcesses = 4;
-        public const int MinWorkerProcesses = 4;
+        public const int MinWorkerProcesses = 2;
 
         // flawless.
         private static readonly bool IsDeployed = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
@@ -137,6 +137,10 @@ namespace MondBot.Master
                 var startInfo = new ProcessStartInfo
                 {
                     UseShellExecute = false,
+                    Environment =
+                    {
+                        { "DOTNET_GCHeapHardLimit", "0x10000000" }, // 256 MiB
+                    },
                 };
 
                 if (IsDeployed)
@@ -157,11 +161,13 @@ namespace MondBot.Master
 
                 if (IsDeployed)
                 {
-                    SpawnLimiter("cpulimit", "-z -l 50 -p {0:G}", process, false);
-                    SpawnLimiter("prlimit", "--as=4294967296 --pid {0:G}", process, true);
+                    SpawnLimiter("renice", "-n 15 {0:G}", process, true);
 
-                    var baseCgroup = Environment.GetEnvironmentVariable("MOND_CGROUP_BASE");
-                    SpawnLimiter("cgclassify", $"-g memory:{baseCgroup}/mondbot-slave {{0:G}}", process, true);
+                    //SpawnLimiter("cpulimit", "-z -l 50 -p {0:G}", process, false);
+                    //SpawnLimiter("prlimit", "--as=4294967296 --pid {0:G}", process, true);
+
+                    //var baseCgroup = Environment.GetEnvironmentVariable("MOND_CGROUP_BASE");
+                    //SpawnLimiter("cgclassify", $"-g memory:{baseCgroup}/mondbot-slave {{0:G}}", process, true);
                 }
 
                 // kill the new process if its not added to _workers in a few seconds
